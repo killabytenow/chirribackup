@@ -248,8 +248,8 @@ Or worse, all your local database (`__chirri__.db`), and disks and computers
 may be destroyed. But if you keep the backup, you can rebuild the original
 database and data using the following command:
 
-	$ ./chirri your_beloved_data_rebuilt_again db rebuild
-	WARNING:CHIRRI:Target directory 'your_beloved_data_rebuilt_again' does not exist.
+	$ ./chirri {your_beloved_data_rebuilt_again} db rebuild
+	WARNING:CHIRRI:Target directory '{your_beloved_data_rebuilt_again}' does not exist.
 	Basic configuration
 	===================
 
@@ -271,8 +271,8 @@ database and data using the following command:
 
 	Continue (yes, no) [y]? 
 	INFO:CHIRRI:Going to initialize database
-	INFO:CHIRRI:Creating directory 'your_beloved_data_rebuilt_again'.
-	INFO:CHIRRI:Creating database 'your_beloved_data_rebuilt_again/__chirri__.db'.
+	INFO:CHIRRI:Creating directory '{your_beloved_data_rebuilt_again}'.
+	INFO:CHIRRI:Creating database '{your_beloved_data_rebuilt_again}/__chirri__.db'.
 	INFO:CHIRRI:Database created succesfully.
 
 	Select target snapshot
@@ -285,14 +285,14 @@ database and data using the following command:
 	       1       5 12/05/2016 01:24:27 12/05/2016 01:24:28 12/05/2016 01:31:49
 
 	Choose snapshot [1]? 
-	INFO:CHIRRI:Restoring snapshot 1 in target path '/home/yuyu/your_beloved_data_rebuilt_again'.
-	WARNING:CHIRRI:Target path '/home/yuyu/your_beloved_data_rebuilt_again' already exists -- continuing restoration on it
+	INFO:CHIRRI:Restoring snapshot 1 in target path '/home/yuyu/{your_beloved_data_rebuilt_again}'.
+	WARNING:CHIRRI:Target path '/home/yuyu/{your_beloved_data_rebuilt_again}' already exists -- continuing restoration on it
 	INFO:CHIRRI:Finished succesfully.
 	INFO:CHIRRI:Commiting changes
 	INFO:CHIRRI:Closing database
 
 And if you compare the old database with the recently rebuilt, only the `__chirri__db` file will differ:
 
-	$ diff -ur test your_beloved_data_rebuilt_again
+	$ diff -ur {your_beloved_data} {your_beloved_data_rebuilt_again}
 	Binary files {your_beloved_data}/__chirri__.db and {your_beloved_data_rebuilt_again}/__chirri__.db differ
 
