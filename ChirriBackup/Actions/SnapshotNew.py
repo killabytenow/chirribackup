@@ -1,0 +1,72 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+###############################################################################
+# ChirriBackup/Actions/Init.py
+#
+#   Initialize database and initialize basic parameters
+#
+# -----------------------------------------------------------------------------
+# Chirri Backup - Cheap and ugly backup tool
+#   Copyright (C) 2016 Gerardo Garcia Peña <killabytenow@gmail.com>
+#
+#   This program is free software; you can redistribute it and/or modify it
+#   under the terms of the GNU General Public License as published by the Free
+#   Software Foundation, either version 3 of the License, or (at your option)
+#   any later version.
+#
+#   This program is distributed in the hope that it will be useful, but WITHOUT
+#   ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+#   FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+#   more details.
+#
+#   You should have received a copy of the GNU General Public License along
+#   with this program. If not, see <http://www.gnu.org/licenses/>.
+# 
+###############################################################################
+
+from ChirriBackup.ChirriException import ChirriException
+from ChirriBackup.Config import CONFIG
+from ChirriBackup.Logger import logger
+import ChirriBackup.Actions.BaseAction
+import ChirriBackup.LocalDatabase
+import ChirriBackup.Snapshot
+import ChirriBackup.Input
+import sys
+import re
+
+class SnapshotNew(ChirriBackup.Actions.BaseAction.BaseAction):
+
+    help = {
+        "synopsis": "Creates a new snapshot",
+        "description": [
+            "This action creates a new snapshot database and configures it."
+        ],
+        "args": [
+            [ "?{base_snapshot_id}",
+                "A snapshot_id for using as base snapshot (inc backup).",
+            ]
+        ]
+    }
+
+
+    def go(self, args):
+        logger.info("Connecting to database")
+        self.ldb = ChirriBackup.LocalDatabase.LocalDatabase(CONFIG.path)
+
+        base_snapshot_id = None
+        if len(args) > 1:
+            raise ChirriException("Too much arguments.")
+        if len(args) > 0:
+            if not re.compile("^([1-9][0-9]*|0)$").match(args[0]):
+                raise ChirriException("Bad snapshot id")
+            base_snapshot_id = int(args[0])
+
+        if base_snapshot_id is not None:
+            logger.info("Creating incremental snapshot based on %d" % base_snapshot_id)
+        else:
+            logger.info("Creating new snapshot from scratch")
+
+        snp = ChirriBackup.Snapshot.Snapshot(self.ldb)
+        snp.new(base_snapshot_id)
+        snp.run()
+
