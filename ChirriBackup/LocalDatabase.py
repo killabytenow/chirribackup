@@ -50,6 +50,9 @@ class LocalDatabase(object):
 
         # basic configuration keys
         status_keys = {
+            # db_version
+            #   Database version.
+            "db_version" :       { "save": 0, "type": "int", "value": 1 },
             # status
             #   Database status. One of following values:
             #       0  downloading file list
@@ -268,6 +271,10 @@ class LocalDatabase(object):
             self.__create_tables(storage_type)
             if not os.path.exists(self.chunks_dir):
                 os.mkdir(self.chunks_dir, 0700)
+
+        if self.db_version > 1:
+            raise ChirriException("This database (version %d) requires a newer version of Chirri Backup." \
+                                    % self.db_version)
 
 
     def snapshot_list(self):

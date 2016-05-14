@@ -71,6 +71,12 @@ class DbCreator(ChirriBackup.Actions.BaseAction.BaseAction):
                 self.ldb,
                 config=True)
 
+        # copy default config of storage manager
+        for sk,v in sm.storage_status_keys.items():
+            if sk in config:
+                raise ChirriException("Storage key '%s' already exists in basic status_keys." % sk)
+            config[sk] = str(v["value"]) if v["value"] is not None else None
+
         # configure storage module
         sm_title = "Backend '%s' configuration" % sm.name
         print ""
@@ -115,10 +121,12 @@ class DbCreator(ChirriBackup.Actions.BaseAction.BaseAction):
         else:
             logger.error("Database already exists.")
 
-        for x in excludes:
-            ChirriBackup.Exclude.Exclude(self.ldb).new(
-                    exclude     = x["exclude"],
-                    expr_type   = x["expr_type"],
-                    ignore_case = x["ignore_case"],
-                    disabled    = x["disabled"])
+        if excludes is not None:
+            for x in excludes:
+                ChirriBackup.Exclude.Exclude(self.ldb).new(
+                        exclude     = x["exclude"],
+                        expr_type   = x["expr_type"],
+                        ignore_case = x["ignore_case"],
+                        disabled    = x["disabled"])
+
 

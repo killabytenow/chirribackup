@@ -61,6 +61,10 @@ class DbInit(ChirriBackup.Actions.DbCreator.DbCreator):
     }
 
     def go(self, args):
+        wizard = True
+        config = None
+        excludes = None
+
         if len(args) > 0:
             # read config file
             with open(args[0], "rb") as f:
