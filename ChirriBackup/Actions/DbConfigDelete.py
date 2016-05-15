@@ -52,11 +52,13 @@ class DbConfigDelete(ChirriBackup.Actions.BaseAction.BaseAction):
     }
 
 
-    def go(self, args):
-        if len(args) != 1:
-            raise ChirriException("Need a config_id")
+    def parse_args(self, argv):
+        return {
+            "config_id" : argv.pop(0),
+        }
 
+    def go(self, config_id):
         self.ldb = ChirriBackup.LocalDatabase.LocalDatabase(CONFIG.path)
-        c = self.ldb.config_delete(args[0])
+        c = self.ldb.config_delete(config_id)
 
 

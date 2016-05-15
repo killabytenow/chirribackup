@@ -54,21 +54,23 @@ class SnapshotRestore(ChirriBackup.Actions.BaseAction.BaseAction):
     }
 
  
-    def go(self, args):
-        overwrite = False
-
-        if len(args) < 2:
-            raise ChirriException("Need an snapshot id and a local directory path.")
-        elif len(args) == 3:
-            if args[2] == "overwrite":
-                overwrite = True
+    def parse_args(self, argv):
+        r = {}
+        r["snapshot_id"] = argv.pop(0)
+        r["target_dir"] = argv.pop(0)
+        if len(argv) > 0:
+            p = argv.pop(0)
+            if p == "overwrite":
+                r["overwrite"] = True
             else:
-                raise ChirriException("Unknown parameter '%s'." % args[2])
-        elif len(args) > 3:
-            raise ChirriException("Too many parameters.")
+                raise UnknownParameterException("Unknown parameter '%s'." % p)
+        return r
 
+
+    def go(self, snapshot_id, target_dir, overwrite = False):
         self.ldb = ChirriBackup.LocalDatabase.LocalDatabase(CONFIG.path)
         snp = ChirriBackup.Snapshot.Snapshot(self.ldb)
-        snp.load(args[0])
-        snp.restore(self.ldb.get_storage_manager(), args[1], overwrite)
+        snp.load(snapshot_id)
+        snp.restore(self.ldb.get_storage_manager(), target_dir, overwrite)
+
 

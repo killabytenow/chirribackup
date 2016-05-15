@@ -41,7 +41,11 @@ class Sync(ChirriBackup.Actions.BaseAction.BaseAction):
     }
 
  
-    def go(self, args):
+    def parse_args(self, argv):
+        return {}
+
+
+    def go(self):
         self.ldb = ChirriBackup.LocalDatabase.LocalDatabase(CONFIG.path)
         syncer = ChirriBackup.Syncer.Syncer(self.ldb)
         syncer.run()

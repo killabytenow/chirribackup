@@ -26,7 +26,7 @@
 #
 ###############################################################################
 
-from ChirriBackup.ChirriException import ChirriException
+from ChirriBackup.ChirriException import *
 from ChirriBackup.Logger import logger
 import ChirriBackup.Storage.BaseStorage
 import ChirriBackup.Snapshot
@@ -103,17 +103,7 @@ class LocalDatabase(object):
                     value           TEXT
                 )''')
         for k,v in status_keys.items():
-            c.execute(
-                """
-                    INSERT INTO status
-                        (key, save, type, value)
-                    VALUES (:key, :save, :type, :value)
-                """, {
-                    "key"   : k,
-                    "save"  : v["save"],
-                    "type"  : v["type"],
-                    "value" : v["value"],
-                });
+            self.config_attrib_new(k, v["save"], v["type"], v["value"])
 
         # TABLE: file_data (hash, size)
         #   hash
@@ -338,6 +328,49 @@ class LocalDatabase(object):
         return status
 
 
+    def config_attrib_new(self, key, save, type, value):
+        self.connection.execute(
+            """
+                INSERT INTO status
+                    (key, save, type, value)
+                VALUES (:key, :save, :type, :value)
+            """, {
+                "key"   : key,
+                "save"  : save,
+                "type"  : type,
+                "value" : value,
+            });
+
+
+    def config_attrib_set(self, key, save):
+            if self.connection is None:
+                raise ChirriException("Database not connected. Cannot write attribute '%s' in %s object" \
+                                            % (key, self.__class__.__name__))
+            ra = self.connection.execute(
+                    "SELECT save, type, value FROM status WHERE key = :key",
+                    { "key": key }).fetchone()
+            if ra is None:
+                raise AttributeError("%s object has no %r attribute" \
+                                        % (self.__class__.__name__, key))
+            try:
+                if value is not None and ra["type"] == "int":
+                    int(value)
+            except ValueError, ex:
+                raise AttributeError("attribute %s requires None or int value (value = %s)." % (key, value))
+            c = self.connection.execute(
+                    """
+                        UPDATE status
+                        SET value = :val
+                        WHERE key = :key
+                    """, {
+                        "key": key,
+                        "val": value,
+                    })
+            if c.rowcount <= 0:
+                raise AttributeError("%s object has no %r attribute" \
+                                        % (self.__class__.__name__, key))
+
+
     def __getattr__(self, attr):
         if self.connection is not None:
             ra = self.connection.execute(
@@ -373,32 +406,7 @@ class LocalDatabase(object):
         elif attr in [ "connection" ]:
             self.__dict__[attr] = value
         else:
-            if self.connection is None:
-                raise ChirriException("Database not connected. Cannot write attribute '%s' in %s object" \
-                                            % (attr, self.__class__.__name__))
-            ra = self.connection.execute(
-                    "SELECT save, type, value FROM status WHERE key = :attr",
-                    { "attr": attr }).fetchone()
-            if ra is None:
-                raise AttributeError("%s object has no %r attribute" \
-                                        % (self.__class__.__name__, attr))
-            try:
-                if value is not None and ra["type"] == "int":
-                    int(value)
-            except ValueError, ex:
-                raise AttributeError("attribute %s requires None or int value (value = %s)." % (attr, value))
-            c = self.connection.execute(
-                    """
-                        UPDATE status
-                        SET value = :val
-                        WHERE key = :key
-                    """, {
-                        "key": attr,
-                        "val": value,
-                    })
-            if c.rowcount <= 0:
-                raise AttributeError("%s object has no %r attribute" \
-                                        % (self.__class__.__name__, attr))
+            self.config_attrib_set(attr, value)
         return value
 
 
@@ -442,6 +450,11 @@ class LocalDatabase(object):
                     "tstamp"    : c["tstamp"],
                     "deleted"   : c["deleted"],
                 })
+        if len(r) == 0:
+            raise ConfigNotFoundException(
+                    "There is not any saved config yet" \
+                        if config_id is None else \
+                            "Cannot find saved config '%s'." % config_id)
        
         return r if config_id is None else r[0]
 

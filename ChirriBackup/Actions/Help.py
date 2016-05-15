@@ -64,10 +64,11 @@ class Help(ChirriBackup.Actions.BaseAction.BaseAction):
         return r
 
 
-    def go(self, args):
-        if len(args) > 0:
-            raise ChirriBackup("This command does not take any argument.")
+    def parse_args(self, argv):
+        return {}
 
+
+    def go(self):
         print "Usage:"
         print ""
         print "    %s {database_directory} {command} [...command arguments...]" % sys.argv[0]

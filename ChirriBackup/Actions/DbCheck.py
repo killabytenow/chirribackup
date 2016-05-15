@@ -39,7 +39,6 @@ import sys
 class DbCheck(ChirriBackup.Actions.BaseAction.BaseAction):
 
     fix = 0
-    rebuild = 0
 
     help = {
         "synopsis": "Check database integrity and fix problems",
@@ -70,6 +69,7 @@ class DbCheck(ChirriBackup.Actions.BaseAction.BaseAction):
 
         return r
 
+
     def check_snapshots(self):
         logger.info("Checking snapshots...")
         # 1. check last id > biggest snapshot id
@@ -80,6 +80,7 @@ class DbCheck(ChirriBackup.Actions.BaseAction.BaseAction):
         # 2.4 status > 5 => uploaded_tstamp != NULL
         # 2.5 started_tstamp < finished_tstamp < uploaded_tstamp
 
+
     def check_refs(self):
         logger.info("Checking file references...")
         # 1. all snapshots exist
@@ -88,6 +89,7 @@ class DbCheck(ChirriBackup.Actions.BaseAction.BaseAction):
         # 3.2. hash exists and size matches
         # 4. size >= 0
         # 5. status NULL OR (status >= -1 AND status <= 2)
+
 
     def check_chunks(self):
         logger.info("Checking chunks...")
@@ -244,9 +246,9 @@ class DbCheck(ChirriBackup.Actions.BaseAction.BaseAction):
     def check_db(self):
         # check for unknown config values
         # check status value
-        self.rebuild = (int(self.ldb.status) < 100)
-        if int(self.ldb.status) < 0 \
-        or int(self.ldb.status) > 100:
+        rebuild = self.ldb.status < 100
+        if self.ldb.status < 0 \
+        or self.ldb.status > 100:
             logger.error("Unknown database status %d." % int(self.ldb.status))
             if self.do_fix("Fix status"):
                 raise ChirriException("Not implemented.")
@@ -285,20 +287,26 @@ class DbCheck(ChirriBackup.Actions.BaseAction.BaseAction):
                         self.ldb.connection.commit()
 
 
-    def go(self, args):
-        self.ldb = ChirriBackup.LocalDatabase.LocalDatabase(CONFIG.path)
-
-        # get arguments
-        self.fix = 0
-        while len(args) > 0:
-            if args[0] == "fix":
-                self.fix |= 1
-                args.pop(0)
-            elif args[0] == "ask":
-                self.fix |= 2
-                args.pop(0)
+    def parse_args(self, argv):
+        fix_level = 0
+        while len(argv) > 0:
+            if argv[0] == "fix":
+                fix_level |= 1
+                argv.pop(0)
+            elif argv[0] == "ask":
+                fix_level |= 2
+                argv.pop(0)
             else:
-                raise ChirriException("Unknown option '%s'." % args[0])
+                raise BadParameterException("Unknown flag '%s'." % args[0])
+        return {
+            "fix_level" : fix_level,
+        }
+
+
+    def go(self, fix_level):
+        self.fix = fix_level
+
+        self.ldb = ChirriBackup.LocalDatabase.LocalDatabase(CONFIG.path)
 
         self.check_db()
         self.check_snapshots()

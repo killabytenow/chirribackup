@@ -49,11 +49,14 @@ class ExcludeDelete(ChirriBackup.Actions.BaseAction.BaseAction):
     }
 
  
-    def go(self, args):
-        if len(args) != 1:
-            raise ChirriException("Need exclude id.")
+    def parse_args(self, argv):
+        return {
+            "exclude_id": argv.pop(0),
+        }
 
+
+    def go(self, exclude_id):
         self.ldb = ChirriBackup.LocalDatabase.LocalDatabase(CONFIG.path)
-        ChirriBackup.Exclude.Exclude(self.ldb, args[0]).delete()
+        ChirriBackup.Exclude.Exclude(self.ldb, exclude_id).delete()
 
 

@@ -45,10 +45,11 @@ class ExcludeList(ChirriBackup.Actions.BaseAction.BaseAction):
     }
  
 
-    def go(self, args):
-        if len(args) != 0:
-            raise ChirriException("This command does not take any argument.")
+    def parse_args(self, argv):
+        return {}
 
+
+    def go(self, args):
         self.ldb = ChirriBackup.LocalDatabase.LocalDatabase(CONFIG.path)
         print "id   disabled type     ignore_case expression"
         print "---- -------- -------- ----------- --------------------------------------------------"

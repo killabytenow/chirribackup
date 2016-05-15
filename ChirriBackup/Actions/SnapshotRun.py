@@ -48,11 +48,14 @@ class SnapshotRun(ChirriBackup.Actions.BaseAction.BaseAction):
     }
  
 
-    def go(self, args):
-        if len(args) != 1:
-            raise ChirriException("Need an snapshot id.")
+    def parse_args(self, argv):
+        return {
+            "snapshot_id": argv.pop(0),
+        }
 
+
+    def go(self, snapshot_id):
         self.ldb = ChirriBackup.LocalDatabase.LocalDatabase(CONFIG.path)
-        snp = ChirriBackup.Snapshot.Snapshot(self.ldb)
-        snp.load(args[0])
-        snp.run()
+        ChirriBackup.Snapshot.Snapshot(self.ldb, snapshot_id).run()
+
+

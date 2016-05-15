@@ -40,7 +40,12 @@ class DbStatus(ChirriBackup.Actions.BaseAction.BaseAction):
         "args": None,
     }
  
-    def go(self, args):
+
+    def parse_args(self, argv):
+        return {}
+
+
+    def go(self):
         self.ldb = ChirriBackup.LocalDatabase.LocalDatabase(CONFIG.path)
         counters = self.ldb.counters()
 

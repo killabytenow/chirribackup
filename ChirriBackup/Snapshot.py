@@ -442,6 +442,7 @@ class Snapshot(object):
                 # do snapshot and calc hash
                 c = ChirriBackup.Chunk.Chunk(self.ldb)
                 try:
+                    logger.info("snapshot of '%s'" % fr["path"])
                     c.new(fr["path"], self.ldb.compression)
 
                     # snapshot succesful: register reference and update

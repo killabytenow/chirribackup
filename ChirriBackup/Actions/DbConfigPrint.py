@@ -55,15 +55,20 @@ class DbConfigPrint(ChirriBackup.Actions.BaseAction.BaseAction):
     }
 
 
-    def go(self, args):
+    def parse_args(self, argv):
+        r = {}
+        if len(argv) > 0:
+            r["config_id"] = argv.pop(0)
+        return r
+
+
+    def go(self, config_id = None):
         self.ldb = ChirriBackup.LocalDatabase.LocalDatabase(CONFIG.path)
-        c = None
-        if len(args) == 0:
-            c = self.ldb.config_snapshot()
-        elif len(args) == 1:
-            c = self.ldb.config_get(args[0])
+
+        if config_id is not None:
+            c = self.ldb.config_get(config_id)
         else:
-            raise ChirriException("Too many parameters.")
+            c = self.ldb.config_snapshot()
 
         print json.dumps(c,
                         sort_keys  = True,

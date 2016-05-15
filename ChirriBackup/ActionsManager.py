@@ -36,6 +36,7 @@ action_handlers = {
             "rebuild"  : "DbRebuild",
             "status"   : "DbStatus",
             "config"   : {
+                "set"    : "DbConfigSet",
                 "save"   : "DbConfigSave",
                 "delete" : "DbConfigDelete",
                 "print"  : "DbConfigPrint",
@@ -144,7 +145,13 @@ def invoke(args):
         if len(args) == 1 and args[0] == 'help':
             print_help(" ".join(action_words), action)
         else:
-            action.go(args)
+            try:
+                p = action.parse_args(args)
+                if len(args) > 0:
+                    raise ChirriException("Too many parameters.")
+            except IndexError, ex:
+                raise ChirriException("Need more parameters.")
+            action.go(**p)
 
         # commit changes
         if action.ldb is not None:

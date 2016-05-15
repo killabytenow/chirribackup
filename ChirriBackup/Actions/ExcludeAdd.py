@@ -78,23 +78,23 @@ class ExcludeAdd(ChirriBackup.Actions.BaseAction.BaseAction):
     }
 
  
-    def go(self, args):
-        if len(args) < 2 or len(args) > 3:
-            raise ChirriException("Need expression type and an exclude expression.")
-        expr_type = args[0]
-        if len(args) > 2:
-            if args[1] != "ignorecase" and args[1] != "ignore_case":
-                raise ChirriException("Unknown flag '%s'." % args[1])
-            ignore_case = 1
-            exclude = args[2]
-        else:
-            ignore_case = 0
-            exclude = args[1]
+    def parse_args(self, argv):
+        r = { } 
+        r["expr_type"] = argv.pop(0)
+        if len(argv) > 1:
+            if argv[0] != "ignorecase" and argv[0] != "ignore_case":
+                raise ChirriException("Unknown flag '%s'." % args[0])
+            argv.pop(0)
+            r["ignore_case"] = 1
+        r["exclude"] = argv.pop(0)
+        return r
 
+
+    def go(self, exclude, expr_type, ignore_case = 0, disabled = 0):
         self.ldb = ChirriBackup.LocalDatabase.LocalDatabase(CONFIG.path)
         ChirriBackup.Exclude.Exclude(self.ldb).new(
                     exclude     = exclude,
                     expr_type   = expr_type,
                     ignore_case = ignore_case,
-                    disabled    = 0)
+                    disabled    = disabled)
 

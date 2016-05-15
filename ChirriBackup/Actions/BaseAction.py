@@ -31,6 +31,9 @@ class BaseAction(object):
     ldb = None
     help = None
 
-    def go(self, args):
+    def parse_args(self, argv):
+        raise ChirriException("This method must be overrided.")
+
+    def go(self):
         raise ChirriException("This method must be overrided.")
 

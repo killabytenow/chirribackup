@@ -49,13 +49,11 @@ class DbConfigList(ChirriBackup.Actions.BaseAction.BaseAction):
     }
 
 
-    def go(self, args):
-        path = None
-        if len(args) == 1:
-            path = args[0]
-        elif len(args) > 1:
-            raise ChirriException("Too many parameters")
+    def parse_args(self, argv):
+        return {}
 
+
+    def go(self):
         self.ldb = ChirriBackup.LocalDatabase.LocalDatabase(CONFIG.path)
         print "config_id status  tstamp              deleted"
         print "--------- ------- ------------------- -------"

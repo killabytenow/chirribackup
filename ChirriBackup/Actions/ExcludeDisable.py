@@ -42,18 +42,21 @@ class ExcludeDisable(ChirriBackup.Actions.BaseAction.BaseAction):
         "synopsis": "Disable a exclude rule",
         "description": None,
         "args": [
-            [ "{exclude}",
+            [ "{exclude_id}",
                 "The exclude rule that will be disabled.",
             ]
         ]
     }
 
  
-    def go(self, args):
-        if len(args) != 1:
-            raise ChirriException("Need exclude expression.")
+    def parse_args(self, argv):
+        return {
+            "exclude_id": argv.pop(0),
+        }
 
+
+    def go(self, exclude_id):
         self.ldb = ChirriBackup.LocalDatabase.LocalDatabase(CONFIG.path)
-        ChirriBackup.Exclude.Exclude(self.ldb, args[0]).disable()
+        ChirriBackup.Exclude.Exclude(self.ldb, exclude_id).disable()
 
 

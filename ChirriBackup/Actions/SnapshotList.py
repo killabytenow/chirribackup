@@ -44,7 +44,11 @@ class SnapshotList(ChirriBackup.Actions.BaseAction.BaseAction):
     }
 
 
-    def go(self, args):
+    def parse_args(self, argv):
+        return {}
+
+
+    def go(self):
         if len(args) > 0:
             raise ChirriException("This command does not take any argument.")
 

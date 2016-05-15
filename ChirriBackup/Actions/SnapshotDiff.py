@@ -60,17 +60,19 @@ class SnapshotDiff(ChirriBackup.Actions.BaseAction.BaseAction):
                     r["gid"],
                     r["mtime"])
 
-    def go(self, args):
-        if len(args) != 2:
-            raise ChirriException("Need two snapshot id's.")
 
+    def parse_args(self, argv):
+        return {
+            "snapshot_id": argv.pop(0),
+        }
+
+
+    def go(self, snapshot_a_id, snapshot_b_id):
         self.ldb = ChirriBackup.LocalDatabase.LocalDatabase(CONFIG.path)
 
         # load snapshots
-        a = ChirriBackup.Snapshot.Snapshot(self.ldb)
-        a.load(args[0])
-        b = ChirriBackup.Snapshot.Snapshot(self.ldb)
-        b.load(args[1])
+        a = ChirriBackup.Snapshot.Snapshot(self.ldb, snapshot_a_id)
+        b = ChirriBackup.Snapshot.Snapshot(self.ldb, snapshot_b_id)
 
         if a.status < 4:
             raise ChirriException("Snapshot A is not finished. At least status 4 is needed.")
@@ -97,4 +99,5 @@ class SnapshotDiff(ChirriBackup.Actions.BaseAction.BaseAction):
         else:
             for k, p in d.iteritems():
                 print "%01x [%s][%s]" % (p["where"], p["a_k"], p["b_k"])
+
 

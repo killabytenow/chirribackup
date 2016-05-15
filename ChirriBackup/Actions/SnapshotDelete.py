@@ -35,25 +35,26 @@ import sys
 class SnapshotDelete(ChirriBackup.Actions.BaseAction.BaseAction):
 
     help = {
-        "synopsis": "Delete snapshot/s",
+        "synopsis": "Delete snapshot",
         "description": [
             "Delete snapshot and data related to it.",
         ],
         "args": [
-            [ "{snapshot_id ...}",
-                "The snapshot_id (or a list of) of the selected snapshot(s)."
+            [ "{snapshot_id}",
+                "The snapshot_id of the selected snapshot."
             ],
         ]
     }
 
 
-    def go(self, args):
-        if len(args) < 1:
-            raise ChirriException("Need at least an snapshot id.")
+    def parse_args(self, argv):
+        return {
+            "snapshot_id": argv.pop(0),
+        }
 
+
+    def go(self, snapshot_id):
         self.ldb = ChirriBackup.LocalDatabase.LocalDatabase(CONFIG.path)
-        snp = ChirriBackup.Snapshot.Snapshot(self.ldb)
-        while len(args) > 0:
-            snp.load(args.pop(0))
-            snp.delete()
+        ChirriBackup.Snapshot.Snapshot(self.ldb, snapshot_id).delete()
+
 

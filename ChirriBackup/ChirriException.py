@@ -51,8 +51,14 @@ class ChirriException(exceptions.Exception):
                   self.__callers_name,
                   self.__desc)
 
+class BadParameterException(ChirriException):
+    """Bad parameter"""
+
 class BadValueException(ChirriException):
     """Bad value"""
+
+class ConfigNotFoundException(ChirriException):
+    """Saved config not found"""
 
 class ChunkNotFoundException(ChirriException):
     """Chunk not found"""

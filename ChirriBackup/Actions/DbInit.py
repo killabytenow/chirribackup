@@ -60,32 +60,38 @@ class DbInit(ChirriBackup.Actions.DbCreator.DbCreator):
         ],
     }
 
-    def go(self, args):
-        wizard = True
+
+    def parse_args(self, argv):
+        r = {
+            "config_file": None,
+            "wizard": True,
+        }
+        if len(argv) > 0:
+            r["config_file"] = argv.pop(0)
+            if len(argv) > 0:
+                p = argv.pop(0)
+                if p == "wizard":
+                    r["wizard"]
+                else:
+                    raise BadParameterException("Unknown flag '%s'." % p)
+        return r
+
+
+    def go(self, config_file, wizard):
         config = None
         excludes = None
 
-        if len(args) > 0:
+        if config_file is not None:
             # read config file
-            with open(args[0], "rb") as f:
-                saved_config = ChirriBackup.LocalDatabase.LocalDatabase.config_parse(f.read())
+            with open(config_file, "rb") as f:
+                config_data = ChirriBackup.LocalDatabase.LocalDatabase.config_parse(f.read())
                 config = {}
-                for k,v in saved_config["status"].iteritems():
+                for k,v in config_data["status"].iteritems():
                     config[k] = str(v["value"])
-                excludes = saved_config["excludes"]
-
-            # by default disable wizard
-            if len(args) > 2:
-                raise ChirriException("Too many parameters")
-            elif len(args) > 1:
-                if args[1] == "wizard":
-                    wizard = True
-                else:
-                    raise ChirriException("Unknown parameter '%s'." % args[1])
-            else:
-                wizard = False
+                excludes = config_data["excludes"]
         else:
-            wizard = True
+            if not wizard:
+                raise ChirriException("wizard must be enabled if config_file is not provided.")
             excludes = None
 
         if wizard:

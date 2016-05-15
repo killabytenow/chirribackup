@@ -49,17 +49,15 @@ class SnapshotNew(ChirriBackup.Actions.BaseAction.BaseAction):
     }
 
 
-    def go(self, args):
-        logger.info("Connecting to database")
-        self.ldb = ChirriBackup.LocalDatabase.LocalDatabase(CONFIG.path)
+    def parse_args(self, argv):
+        r = {}
+        if len(argv) > 0:
+            r["base_snapshot_id"] = int(argv.pop(0))
+        return r
 
-        base_snapshot_id = None
-        if len(args) > 1:
-            raise ChirriException("Too much arguments.")
-        if len(args) > 0:
-            if not re.compile("^([1-9][0-9]*|0)$").match(args[0]):
-                raise ChirriException("Bad snapshot id")
-            base_snapshot_id = int(args[0])
+
+    def go(self, base_snapshot_id = None):
+        self.ldb = ChirriBackup.LocalDatabase.LocalDatabase(CONFIG.path)
 
         if base_snapshot_id is not None:
             logger.info("Creating incremental snapshot based on %d" % base_snapshot_id)
@@ -69,4 +67,5 @@ class SnapshotNew(ChirriBackup.Actions.BaseAction.BaseAction):
         snp = ChirriBackup.Snapshot.Snapshot(self.ldb)
         snp.new(base_snapshot_id)
         snp.run()
+
 
