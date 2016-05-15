@@ -347,7 +347,7 @@ class LocalDatabase(object):
             });
 
 
-    def config_attrib_set(self, key, save):
+    def config_attrib_set(self, key, value):
             if self.connection is None:
                 raise ChirriException("Database not connected. Cannot write attribute '%s' in %s object" \
                                             % (key, self.__class__.__name__))

@@ -49,7 +49,7 @@ class ExcludeList(ChirriBackup.Actions.BaseAction.BaseAction):
         return {}
 
 
-    def go(self, args):
+    def go(self):
         self.ldb = ChirriBackup.LocalDatabase.LocalDatabase(CONFIG.path)
         print "id   disabled type     ignore_case expression"
         print "---- -------- -------- ----------- --------------------------------------------------"
