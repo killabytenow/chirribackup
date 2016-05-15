@@ -329,6 +329,11 @@ class LocalDatabase(object):
 
 
     def config_attrib_new(self, key, save, type, value):
+        try:
+            if value is not None and type == "int":
+                int(value)
+        except ValueError, ex:
+            raise AttributeError("attribute %s requires None or int value (value = %s)." % (key, value))
         self.connection.execute(
             """
                 INSERT INTO status
@@ -371,24 +376,41 @@ class LocalDatabase(object):
                                         % (self.__class__.__name__, key))
 
 
-    def __getattr__(self, attr):
+    def config_attrib_get(self, key):
         if self.connection is not None:
             ra = self.connection.execute(
-                    "SELECT save, type, value FROM status WHERE key = :attr",
-                    { "attr": attr }).fetchone()
+                    "SELECT save, type, value FROM status WHERE key = :key",
+                    { "key": key }).fetchone()
             if ra is None:
                 raise AttributeError("%s object has no %r attribute" \
-                                        % (self.__class__.__name__, attr))
+                                        % (self.__class__.__name__, key))
         else:
             raise ChirriException("Database not connected. Cannot read attribute '%s' in %s object" \
-                                        % (attr, self.__class__.__name__))
+                                        % (key, self.__class__.__name__))
         if ra["value"] is None:
             return None
         if ra["type"] == "int":
             return int(ra["value"])
         if ra["type"] == "str":
             return ra["value"]
-        raise ChirriException("Unknown type '%s' in status key '%s'." % (ra["type"], attr))
+        raise ChirriException("Unknown type '%s' in status key '%s'." % (ra["type"], key))
+
+
+    def config_attrib_delete(self, key):
+            c = self.connection.execute(
+                    """
+                        DELETE FROM status
+                        WHERE key = :key
+                    """, {
+                        "key": key,
+                    })
+            if c.rowcount <= 0:
+                raise AttributeError("%s object has no %r attribute" \
+                                        % (self.__class__.__name__, key))
+
+
+    def __getattr__(self, attr):
+        return self.config_attrib_get(attr)
 
 
     def __setattr__(self, attr, value):

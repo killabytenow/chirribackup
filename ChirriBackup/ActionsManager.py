@@ -31,12 +31,16 @@ import traceback
 
 action_handlers = {
         "db" : {
+            "attribute" : {
+                "delete" : "DbAttributeDelete",
+                "get"    : "DbAttributeGet",
+                "set"    : "DbAttributeSet",
+            },
             "init"     : "DbInit",
             "check"    : "DbCheck",
             "rebuild"  : "DbRebuild",
             "status"   : "DbStatus",
             "config"   : {
-                "set"    : "DbConfigSet",
                 "save"   : "DbConfigSave",
                 "delete" : "DbConfigDelete",
                 "print"  : "DbConfigPrint",

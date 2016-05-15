@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 ###############################################################################
-# ChirriBackup/Actions/DbConfigPrint.py
+# ChirriBackup/Actions/DbAttributeSet.py
 #
-#   Prints stored config
+#   Set a db parameter
 #
 # -----------------------------------------------------------------------------
 # Chirri Backup - Cheap and ugly backup tool
@@ -34,7 +34,7 @@ import json
 import sys
 
 
-class DbConfigSet(ChirriBackup.Actions.BaseAction.BaseAction):
+class DbAttributeSet(ChirriBackup.Actions.BaseAction.BaseAction):
 
     fix = 0
     rebuild = 0
