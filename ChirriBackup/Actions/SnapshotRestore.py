@@ -56,7 +56,7 @@ class SnapshotRestore(ChirriBackup.Actions.BaseAction.BaseAction):
  
     def parse_args(self, argv):
         r = {}
-        r["snapshot_id"] = argv.pop(0)
+        r["snapshot_id"] = int(argv.pop(0))
         r["target_dir"] = argv.pop(0)
         if len(argv) > 0:
             p = argv.pop(0)
@@ -69,8 +69,8 @@ class SnapshotRestore(ChirriBackup.Actions.BaseAction.BaseAction):
 
     def go(self, snapshot_id, target_dir, overwrite = False):
         self.ldb = ChirriBackup.LocalDatabase.LocalDatabase(CONFIG.path)
-        snp = ChirriBackup.Snapshot.Snapshot(self.ldb)
-        snp.load(snapshot_id)
-        snp.restore(self.ldb.get_storage_manager(), target_dir, overwrite)
+        ChirriBackup.Snapshot.Snapshot(self.ldb) \
+                .load(snapshot_id) \
+                .restore(self.ldb.get_storage_manager(), target_dir, overwrite)
 
 

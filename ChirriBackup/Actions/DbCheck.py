@@ -146,7 +146,7 @@ class DbCheck(ChirriBackup.Actions.BaseAction.BaseAction):
                 # i dont know what to do here
 
             # 6. compression algorithm
-            if chunk.compression not in [ "lzma" ]:
+            if chunk.compression is not None and chunk.compression not in [ "lzma" ]:
                 logger.error("Chunk %s is using unknown compression algorithm '%s'." \
                                 % (chunk.hash_format(), chunk.compression))
                 raise ChirriException("Not implemented.")

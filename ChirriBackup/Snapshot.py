@@ -593,8 +593,10 @@ class Snapshot(object):
                         "SELECT * FROM file_ref WHERE snapshot = :id",
                         { "id" : self.snapshot_id, }):
             # (if hash is None or symlink/dir doesn't matter)
-            chunk = ChirriBackup.Chunk(ldb, fr["hash"])
-            chunk.refcount_dec()
+            fr_type = self.file_ref_type(fr["hash"])
+            if fr_type == "regfile" and fr["hash"] is not None:
+                chunk = ChirriBackup.Chunk.Chunk(self.ldb, fr["hash"])
+                chunk.refcount_dec()
 
         # delete snapshot's related file_ref
         self.ldb.connection.execute(

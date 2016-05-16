@@ -175,12 +175,16 @@ class GoogleStorage(ChirriBackup.Storage.BaseStorage.BaseStorage):
 
 
     def delete_file(self, remote_file):
-        req = self.service.objects().delete(
-                        bucket = self.ldb.sm_gs_bucket,
-                        object = self.__build_gs_path(remote_file))
-        resp = req.execute()
-        #try:
-        #except errors.HttpError, ex:
-        #    print "File not exists: %s" % ex
+        try:
+            req = self.service.objects().delete(
+                            bucket = self.ldb.sm_gs_bucket,
+                            object = self.__build_gs_path(remote_file))
+            resp = req.execute()
+        except errors.HttpError, ex:
+            if ex.resp.status != 404:
+                raise ex
+            else:
+                logger.error("Cannot delete remote file '%s' because it does not exists." \
+                                % remote_file)
 
 

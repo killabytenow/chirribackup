@@ -49,9 +49,6 @@ class SnapshotList(ChirriBackup.Actions.BaseAction.BaseAction):
 
 
     def go(self):
-        if len(args) > 0:
-            raise ChirriException("This command does not take any argument.")
-
         self.ldb = ChirriBackup.LocalDatabase.LocalDatabase(CONFIG.path)
         print "snapshot  status  deleted started             finished            uploaded"
         print "--------- ------- ------- ------------------- ------------------- -------------------"

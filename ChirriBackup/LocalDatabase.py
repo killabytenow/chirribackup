@@ -474,7 +474,7 @@ class LocalDatabase(object):
                     "tstamp"    : c["tstamp"],
                     "deleted"   : c["deleted"],
                 })
-        if len(r) == 0:
+        if len(r) == 0 and config_id is not None:
             raise ConfigNotFoundException(
                     "There is not any saved config yet" \
                         if config_id is None else \

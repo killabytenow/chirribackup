@@ -63,7 +63,8 @@ class SnapshotDiff(ChirriBackup.Actions.BaseAction.BaseAction):
 
     def parse_args(self, argv):
         return {
-            "snapshot_id": argv.pop(0),
+            "snapshot_a_id": int(argv.pop(0)),
+            "snapshot_b_id": int(argv.pop(0)),
         }
 
 
@@ -71,8 +72,8 @@ class SnapshotDiff(ChirriBackup.Actions.BaseAction.BaseAction):
         self.ldb = ChirriBackup.LocalDatabase.LocalDatabase(CONFIG.path)
 
         # load snapshots
-        a = ChirriBackup.Snapshot.Snapshot(self.ldb, snapshot_a_id)
-        b = ChirriBackup.Snapshot.Snapshot(self.ldb, snapshot_b_id)
+        a = ChirriBackup.Snapshot.Snapshot(self.ldb).load(snapshot_a_id)
+        b = ChirriBackup.Snapshot.Snapshot(self.ldb).load(snapshot_b_id)
 
         if a.status < 4:
             raise ChirriException("Snapshot A is not finished. At least status 4 is needed.")

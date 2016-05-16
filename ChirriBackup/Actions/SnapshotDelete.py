@@ -49,12 +49,12 @@ class SnapshotDelete(ChirriBackup.Actions.BaseAction.BaseAction):
 
     def parse_args(self, argv):
         return {
-            "snapshot_id": argv.pop(0),
+            "snapshot_id": int(argv.pop(0)),
         }
 
 
     def go(self, snapshot_id):
         self.ldb = ChirriBackup.LocalDatabase.LocalDatabase(CONFIG.path)
-        ChirriBackup.Snapshot.Snapshot(self.ldb, snapshot_id).delete()
+        ChirriBackup.Snapshot.Snapshot(self.ldb).load(snapshot_id).delete()
 
 
