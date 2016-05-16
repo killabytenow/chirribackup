@@ -24,7 +24,7 @@
 # 
 ###############################################################################
 
-from ChirriBackup.ChirriException import ChirriException
+from ChirriBackup.ChirriException import *
 from ChirriBackup.Logger import logger
 import exceptions
 import traceback
@@ -68,42 +68,24 @@ action_handlers = {
         "sync"   : "Sync",
 }
 
-def get_method(args, cah = None, action_words = None):
-    if cah is None:
-        cah = action_handlers
-        action_words = [ ]
-
-    # no more parameters, but we dont have nothing ... return none
-    if len(args) == 0:
-        return (None, action_words, args, cah)
-
-    ## at least we have read one acceptable command token. If next word is
-    ## 'help' then return 'help'.
-    #if len(action_words) == 1:
-    #    if len(args) == 0 or (len(args) == 1 and args[0] == "help"):
-    #        return (None, action_words, args, cah)
-    #elif len(action_words) == 0 and len(args) < 1:
-    #    return (None, action_words, args, cah)
-
-    action = args[0]
-    action_words.append(action)
-    args = args[1:] if len(args) > 1 else [ ]
-
-    if action not in cah.keys():
-        return (None, action_words, args, None)
-
-    if isinstance(cah[action], dict):
-        return get_method(args, cah[action], action_words)
+def get_action_name(args):
+    # process arg list
+    rargs = []
+    cah = action_handlers
+    while len(args) > 0:
+        cm = args.pop(0)
+        rargs.append(cm)
+        if cm not in cah:
+            raise BadActionException("Invalid command '%s'." % " ".join(rargs))
+        cah = cah[cm]
+        if not isinstance(cah, dict):
+            return (rargs, None, cah)
+    if len(rargs) > 0:
+        raise BadActionException("Incomplete action '%s'; valid subactions: %s" \
+                                    % (", ".join(rargs), ", ".join(cah.keys())))
     else:
-        return (cah[action], action_words, args, None)
-
-
-def check(args):
-    (name, action_words, args, cah) = get_method(args)
-    return (
-        name is not None,
-        cah.keys() if isinstance(cah, dict) else None
-    )
+        raise BadActionException("Need an action; valid subactions: %s" \
+                                    % ", ".join(cah.keys()))
 
 
 def print_help(command, action):
@@ -133,29 +115,35 @@ def print_help(command, action):
         print "Arguments: this command does not take any argument."
         print ""
 
+
 def invoke(args):
-    (name, action_words, args, cah) = get_method(args)
+    # parse call
+    # NOTE: in this call 'args' get modified, and action name args are moved to
+    # the rargs array.
+    (rargs, __this_should_be_None__, action_name) = get_action_name(args)
+    if __this_should_be_None__ is not None:
+        raise ChirriException("__this_should_be_None__ is not None!")
 
-    modref = __import__("ChirriBackup.Actions.%s" % name,
+    # load action module
+    modref = __import__("ChirriBackup.Actions.%s" % action_name,
                 fromlist=["ChirriBackup.Actions"])
-
     if modref is None:
-        raise ChirriException("Uknown action '%s'." % " ".join(action_words))
-
-    classref = getattr(modref, name)
+        raise BadActionException("Uknown action '%s'." % " ".join(rargs))
+    classref = getattr(modref, action_name)
     action = classref()
 
     try:
-        # execute action
         if len(args) == 1 and args[0] == 'help':
-            print_help(" ".join(action_words), action)
+            # print help about this command
+            print_help(" ".join(rargs), action)
         else:
+            # execute action
             try:
                 p = action.parse_args(args)
                 if len(args) > 0:
-                    raise ChirriException("Too many parameters.")
+                    raise BadParameterException("Too many parameters.")
             except IndexError, ex:
-                raise ChirriException("Need more parameters.")
+                raise BadParameterException("Need more parameters.")
             action.go(**p)
 
         # commit changes
@@ -163,15 +151,17 @@ def invoke(args):
             logger.debug("Commiting changes")
             action.ldb.connection.commit()
 
+    except ActionInvocationException, ex:
+        raise
+
     except exceptions.Exception, ex:
-        logger.error("Action failed")
         if action.ldb is not None:
             logger.debug("Trying to rollback")
             action.ldb.connection.rollback()
         else:
             logger.warning("Cannot rollback")
 
-        logger.error(traceback.format_exc(), escape_nl = False)
+        logger.debug(traceback.format_exc(), escape_nl = False)
         raise
 
     finally:

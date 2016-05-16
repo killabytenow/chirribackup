@@ -39,10 +39,11 @@ class ChirriException(exceptions.Exception):
         self.__callers_lino = sys._getframe(1).f_lineno
         self.__callers_name = sys._getframe(1).f_code.co_name
         self.__desc = self.__class__.__name__ + ": " + desc;
-        #if self.__desc is not None:
-        #    self.__desc = self.__gen_desc + ": " + desc;
-        #else:
-        #    self.__desc = desc;
+
+
+    def desc(self):
+        return self.__desc
+
 
     def __str__(self):
         return "%s:%d:%s(): %s" \
@@ -51,7 +52,13 @@ class ChirriException(exceptions.Exception):
                   self.__callers_name,
                   self.__desc)
 
-class BadParameterException(ChirriException):
+class ActionInvocationException(ChirriException):
+    """Exceptions raised by an incorrect action invocation"""
+
+class BadActionException(ActionInvocationException):
+    """Bad action"""
+
+class BadParameterException(ActionInvocationException):
     """Bad parameter"""
 
 class BadValueException(ChirriException):
@@ -61,6 +68,9 @@ class ConfigNotFoundException(ChirriException):
     """Saved config not found"""
 
 class ChunkNotFoundException(ChirriException):
+    """Chunk not found"""
+
+class ChunkBadHashException(ChirriException):
     """Chunk not found"""
 
 class ChunkBadFilenameException(ChirriException):

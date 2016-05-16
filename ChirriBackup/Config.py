@@ -27,14 +27,13 @@
 #
 ###############################################################################
 
+from ChirriBackup.Logger import logger
+from optparse import OptionError
+from optparse import OptionParser
+import ChirriBackup.ActionsManager
 import os
 import re
 import sys
-import ChirriBackup.ActionsManager
-from ChirriBackup.Logger import logger
-from ChirriBackup.ChirriException import ChirriException
-from optparse import OptionParser
-from optparse import OptionError
 
 
 class Config(object):
@@ -47,11 +46,17 @@ class Config(object):
             args = None
             parser = OptionParser(
                         prog="ChirriBackup",
-                        description="%prog is a cheap and ugly backup tool written with love",
+                        description="%prog is a cheap and ugly backup tool written with love.",
                         version="%prog 1.0",
                         usage="%s [options] {directory} {action} [action args...]" % sys.argv[0],
-                        epilog="Valid actions: init, set, unset, snapshot, upload, download"
+                        epilog="Use 'help' action for more information. Other valid commands: %s" \
+                                % " ".join(ChirriBackup.ActionsManager.action_handlers.keys())
                         )
+            parser.add_option("-D", "--debug",
+                                  dest="verbosity",
+                                  action="store_const",
+                                  const="DEBUG",
+                                  help="Debug verbosity level.")
             parser.add_option("-l", "--log-file",
                                   dest="logfile",
                                   default=None,
@@ -64,6 +69,11 @@ class Config(object):
 
             try:
                 (self.options, args) = parser.parse_args()
+
+                if self.options.logfile is not None:
+                    logger.to_file(self.options.logfile)
+                if self.options.verbosity is not None:
+                    logger.setLogLevel(self.options.verbosity)
 
                 if len(args) < 1:
                         parser.error("Target {directory} not specified.")
@@ -83,18 +93,9 @@ class Config(object):
                     elif not os.path.isdir(self.options.path):
                             parser.error("Target directory '%s' is not a directory." % self.options.path)
 
-                    (ok, nextkw) = ChirriBackup.ActionsManager.check(self.options.args)
-                    if not ok:
-                        if nextkw is None:
-                            parser.error("Unrecognized action '%s'." % " ".join(self.options.args))
-                        else:
-                            if len(args) > 1:
-                                parser.error("Uncomplete action '%s'; valid subactions: '%s'" % (self.options.args[0], "', '".join(sorted(nextkw))))
-                            else:
-                                parser.error("Needed action; valid actions: '%s'" % "', '".join(sorted(nextkw)))
-
             except (OptionError, TypeError), e:
                 parser.error(e)
+
 
     # Singleton container class
     __instance = None
@@ -105,18 +106,10 @@ class Config(object):
             self.__class__.__instance = self.__class__.internal_Config()
         self.__dict__['_Singleton__instance'] = self.__class__.__instance
 
-    def get_options(self):
-        r = self.__instance.get_options()
-
-        if self.logfile is not None:
-            logger.to_file(self.logfile)
-        if self.verbosity is not None:
-            logger.setLogLevel(self.verbosity)
-
-        return r
 
     def __getattr__(self, attr):
         return getattr(self.__instance.options, attr)
+
 
     def __setattr__(self, attr, value):
         return setattr(self.__instance.options, attr, value)

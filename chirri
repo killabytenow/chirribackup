@@ -24,7 +24,7 @@
 # 
 ###############################################################################
 
-from ChirriBackup.ChirriException import ChirriException
+from ChirriBackup.ChirriException import *
 from ChirriBackup.Config import CONFIG
 from ChirriBackup.Logger import logger
 import ChirriBackup.ActionsManager
@@ -32,6 +32,10 @@ import sys
 
 try:
     ChirriBackup.ActionsManager.invoke(CONFIG.args)
+
+except ActionInvocationException, ex:
+    logger.error(ex.desc())
+    sys.exit(1)
 
 except ChirriException, ex:
     logger.critical(str(ex))

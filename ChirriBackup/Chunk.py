@@ -55,7 +55,7 @@ class Chunk(object):
 
     def load(self, hash):
         if not ChirriBackup.Crypto.ChirriHasher.hash_check(hash):
-            raise ChirriException("Bad hash '%s'." % hash)
+            raise ChunkBadHashException("Bad hash '%s'." % hash)
         c = self.ldb.connection.execute(
                 "SELECT * FROM file_data WHERE hash = :hash",
                 { "hash" : hash }).fetchone()
@@ -129,9 +129,7 @@ class Chunk(object):
             # check the improbability
             if sh.nbytes != oc["size"]:
                 raise ChirriException("OMG! File '%s' matches with chunk %s, but it differs in size."
-                                        % (target_file,
-                                           ChirriBackup.Crypto.ChirriHasher.hash_format(
-                                                sh.hash)))
+                                        % (target_file, self.hash_format()))
 
             # hash already processed, load and return
             return self.load(sh.hash)
@@ -159,8 +157,7 @@ class Chunk(object):
                     if sh.nbytes != eh.nbytes:
                         raise ChirriException("OMG! Target file '%s' exists, with same hash of '%s', but differs in size." \
                                                 % (target_file, source_file))
-                    logger.warning("Local chunk '%s' already exists." \
-                                    % ChirriBackup.Crypto.ChirriHasher.hash_format(self.hash))
+                    logger.warning("Local chunk '%s' already exists." % self.hash_format())
                     # use the existing chunk snapshot -- it is already there
                     os.unlink(tmp_file)
             except exceptions.IOError, ex:
@@ -252,9 +249,11 @@ class Chunk(object):
                 "SELECT refcount FROM file_data WHERE hash = :hash",
                 { "hash"  : self.hash }).fetchone()
             if c is None:
-                raise ChirriBackup("Chunk %s does not exists." \
-                            % ChirriBackup.Crypto.ChirriHasher.hash_format(self.hash))
-            return c[0]
+                raise ChirriException("Chunk %s does not exists." % self.hash_format())
+            c = c[0]
+            if c < 0:
+                raise ChirriException("Negative ref in chunk %s." % self.hash_format())
+            return c
 
 
     def refcount_inc(self):
