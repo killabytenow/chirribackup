@@ -32,14 +32,6 @@ import time
 import ChirriBackup.ChirriException
 from ChirriBackup.StringFormat import *
 
-psyco_available = False
-try:
-    import psyco
-    psyco_available = True
-except ImportError, e:
-    pass
-
-
 class LoggerException(ChirriBackup.ChirriException.ChirriException):
     """Exception raised by the Logger methods."""
 
@@ -79,9 +71,6 @@ class Logger(object):
 
             # Default lower level definition
             self.setLogLevel("INFO")
-
-            # Handler Utilization
-            #self.info("Log System Initialization at '%s'" % time.ctime())
 
             return None
 
@@ -150,18 +139,7 @@ class Logger(object):
             self.__logger.setLevel(logging.DEBUG if self.__level == -1 else self.__level)
 
 
-        if psyco_available:
-            psyco.bind(log)
-            psyco.bind(to_file)
-            psyco.bind(critical)
-            psyco.bind(error)
-            psyco.bind(warning)
-            psyco.bind(info)
-            psyco.bind(debug)
-            psyco.bind(setLogLevel)
-
-        ## Redefinition of id (ONLY TEST INTETION)
-        #
+    # singlton
     __instance = None
 
     def __init__(self):
@@ -182,10 +160,5 @@ class Logger(object):
     def __setattr__(self, attr, value):
         """ Delegate access to implementation """
         return setattr(self.__instance, attr, value)
-
-    if psyco_available:
-        psyco.bind(__init__)
-        psyco.bind(__getattr__)
-        psyco.bind(__setattr__)
 
 logger = Logger()
