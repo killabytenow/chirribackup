@@ -47,9 +47,9 @@ class Snapshot(object):
     uploaded_tstamp = None
 
     def __init__(self, ldb):
-        """ buuu """
         self.ldb = ldb
         self.snapshot_id = None
+
 
     def new(self, base_snapshot_id = None, snapshot_id = None):
         # get 'snapshot_id' and increment 'last_snapshot_id'
