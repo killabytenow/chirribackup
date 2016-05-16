@@ -31,6 +31,7 @@ import ChirriBackup.Actions.BaseAction
 import ChirriBackup.LocalDatabase
 import ChirriBackup.Snapshot
 import sys
+import time
 
 class SnapshotDetails(ChirriBackup.Actions.BaseAction.BaseAction):
 
@@ -66,7 +67,7 @@ class SnapshotDetails(ChirriBackup.Actions.BaseAction.BaseAction):
         print "Files:"
         print ""
 
-        f = [ 23, 10, 10, 6, 4, 4, 14, 6, 30 ]
+        f = [ 23, 10, 10, 6, 4, 4, 19, 6, 30 ]
         print ("%" + ("s %".join("-{0}".format(n) for n in f)) + "s") % (
                     "hash",
                     "size",
@@ -93,7 +94,8 @@ class SnapshotDetails(ChirriBackup.Actions.BaseAction.BaseAction):
                     "%o" % ref["perm"],
                     ref["uid"],
                     ref["gid"],
-                    ref["mtime"],
+                    time.strftime("%d/%m/%Y %H:%M:%S", time.localtime(ref["mtime"])) \
+                        if ref["mtime"] is not None else None,
                     ref["status"],
                     ref["path"])
 

@@ -31,6 +31,7 @@ import ChirriBackup.Actions.BaseAction
 import ChirriBackup.LocalDatabase
 import ChirriBackup.Snapshot
 import sys
+import time
 
 class SnapshotDiff(ChirriBackup.Actions.BaseAction.BaseAction):
 
@@ -86,6 +87,7 @@ class SnapshotDiff(ChirriBackup.Actions.BaseAction.BaseAction):
             for r in s.refs():
                 if not r["path"] in d:
                     d[r["path"]] =  { "where" : 0, "a_k" : "", "b_k" : "" }
+                d[r["path"]]["a" if n == 1 else "b"] = r
                 d[r["path"]]["a_k" if n == 1 else "b_k"] = self.k(r)
                 d[r["path"]]["where"] = d[r["path"]]["where"] | n
 
@@ -98,7 +100,57 @@ class SnapshotDiff(ChirriBackup.Actions.BaseAction.BaseAction):
         if len(d) == 0:
             print "No differences."
         else:
+            # print header
+            f = [ 3, 8, 4, 4, 4, 8, 19, 40 ]
+            print ("%" + ("s %".join("-{0}".format(n) for n in f)) + "s") % (
+                        "st",
+                        "content",
+                        "perm",
+                        "uid",
+                        "gid",
+                        "size",
+                        "mtime",
+                        "path")
+            l = [ ]
+            for i in f:
+                l.append("-" * i)
+            print " ".join(l)
+
+            # print diff's
             for k, p in d.iteritems():
-                print "%01x [%s][%s]" % (p["where"], p["a_k"], p["b_k"])
+                if p["where"] != 3:
+                    s = "a" if p["where"] == 1 else "b"
+                    print ("%" + ("s %".join("-{0}".format(n) for n in f)) + "s") \
+                            % ("del" if p["where"] == 0x1 else "new",
+                               "",
+                               "%o" % p[s]["perm"],
+                               p[s]["uid"],
+                               p[s]["gid"],
+                               p[s]["size"],
+                               time.strftime("%d/%m/%Y %H:%M:%S", time.localtime(p[s]["mtime"])) \
+                                   if p[s]["mtime"] is not None else None,
+                               p[s]["path"])
+                else:
+                    print ("%" + ("s %".join("-{0}".format(n) for n in f)) + "s") \
+                            % ("chg",
+                               "",
+                               "%o" % p["a"]["perm"],
+                               p["a"]["uid"],
+                               p["a"]["gid"],
+                               p["a"]["size"],
+                               time.strftime("%d/%m/%Y %H:%M:%S", time.localtime(p["a"]["mtime"])) \
+                                   if p["a"]["mtime"] is not None else None,
+                               p["a"]["path"])
+                    print ("%" + ("s %".join("-{0}".format(n) for n in f)) + "s") \
+                            % ("...",
+                               "yes" if p["a"]["hash"] != p["b"]["hash"] else "",
+                               "%o" % p["b"]["perm"] if p["a"]["perm"] != p["b"]["perm"] else "\"",
+                               p["b"]["uid"]         if p["a"]["uid"]  != p["b"]["uid"]  else "\"",
+                               p["b"]["gid"]         if p["a"]["gid"]  != p["b"]["gid"]  else "\"",
+                               p["b"]["size"]        if p["a"]["size"] != p["b"]["size"] else "\"",
+                               (time.strftime("%d/%m/%Y %H:%M:%S", time.localtime(p["b"]["mtime"])) \
+                                   if p["b"]["mtime"] is not None else None) \
+                                    if p["a"]["mtime"] != p["b"]["mtime"] else "\"",
+                               p["a"]["path"])
 
 

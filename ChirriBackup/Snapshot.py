@@ -422,8 +422,9 @@ class Snapshot(object):
                         "path"     : fr["path"]
                     })
                 if fr["hash"] is not None and fr["hash"] != "":
-                    chunk = ChirriBackup.Chunk(ldb, hash_or_type)
+                    chunk = ChirriBackup.Chunk.Chunk(self.ldb, fr["hash"])
                     chunk.refcount_dec()
+
 
     def run_hashy_hasher(self):
         """do the hashy hashy"""
