@@ -36,6 +36,8 @@ import time
 import re
 import sqlite3
 
+DB_VERSION = 1
+
 class LocalDatabase(object):
 
     __initialized__ = None
@@ -52,7 +54,7 @@ class LocalDatabase(object):
         status_keys = {
             # db_version
             #   Database version.
-            "db_version" :       { "save": 0, "type": "int", "value": 1 },
+            "db_version" :       { "save": 0, "type": "int", "value": DB_VERSION },
             # status
             #   Database status. One of following values:
             #       0  downloading file list
@@ -262,8 +264,8 @@ class LocalDatabase(object):
             if not os.path.exists(self.chunks_dir):
                 os.mkdir(self.chunks_dir, 0700)
 
-        if self.db_version > 1:
-            raise ChirriException("This database (version %d) requires a newer version of Chirri Backup." \
+        if self.db_version != DB_VERSION:
+            raise ChirriException("This database (version %d) requires a different version of Chirri Backup." \
                                     % self.db_version)
 
 
