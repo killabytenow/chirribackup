@@ -75,8 +75,9 @@ class DbStatus(ChirriBackup.Actions.BaseAction.BaseAction):
 
         # print config
         print "  - config:"
-        config = self.ldb.get()
+        config = self.ldb.config_attrib_list()
         max_length = max([len(x) for x in config.iterkeys()])
         for k, v in sorted(config.items()):
-            print ("        %-" + str(max_length) + "s = '%s'") % (k, v["value"])
+            print ("        %-" + str(max_length) + "s = %s") \
+                    % (k, "\"%s\"" % v["value"] if v["type"] == "str" else v["value"])
 
