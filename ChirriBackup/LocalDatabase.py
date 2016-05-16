@@ -316,7 +316,7 @@ class LocalDatabase(object):
 
         return False
 
-    def get(self):
+    def config_attrib_list(self):
         status = {}
         for kv in self.connection.execute("SELECT * FROM status"):
             status[kv["key"]] = {

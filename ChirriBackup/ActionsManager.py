@@ -35,6 +35,7 @@ action_handlers = {
                 "delete" : "DbAttributeDelete",
                 "get"    : "DbAttributeGet",
                 "set"    : "DbAttributeSet",
+                "list"   : "DbAttributeList",
             },
             "init"     : "DbInit",
             "check"    : "DbCheck",
