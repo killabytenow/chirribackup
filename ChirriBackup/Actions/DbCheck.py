@@ -255,7 +255,7 @@ class DbCheck(ChirriBackup.Actions.BaseAction.BaseAction):
 
 
     def check_exclude(self):
-        for x in self.ldb.connection.execute("SELECT * FROM exclude"):
+        for x in self.ldb.connection.execute("SELECT * FROM excludes"):
             if x["disabled"] != 0:
                 continue
 
@@ -264,10 +264,10 @@ class DbCheck(ChirriBackup.Actions.BaseAction.BaseAction):
                 if self.do_fix("Delete exclude rule"):
                     self.ldb.connection.execute(
                         """
-                            DELETE FROM exclude
-                            WHERE exclude = :exclude
+                            DELETE FROM excludes
+                            WHERE exclude = :exclude_id
                         """, {
-                            "exclude"   : x["exclude"],
+                            "exclude_id": x["exclude_id"],
                         })
                     self.ldb.connection.commit()
             elif x["expr_type"] == 2:
@@ -278,11 +278,11 @@ class DbCheck(ChirriBackup.Actions.BaseAction.BaseAction):
                     if self.do_fix("Disable exclude rule"):
                         self.ldb.connection.execute(
                             """
-                                UPDATE exclude
+                                UPDATE excludes
                                 SET disabled = 1
-                                WHERE exclude = :exclude
+                                WHERE exclude_id = :exclude_id
                             """, {
-                                "exclude"   : x["exclude"],
+                                "exclude_id"   : x["exclude_id"],
                             })
                         self.ldb.connection.commit()
 
@@ -302,6 +302,9 @@ class DbCheck(ChirriBackup.Actions.BaseAction.BaseAction):
             "fix_level" : fix_level,
         }
 
+
+    def check_config_backups(self):
+        """TODO"""
 
     def go(self, fix_level):
         self.fix = fix_level
