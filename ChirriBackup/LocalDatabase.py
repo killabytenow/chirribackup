@@ -185,6 +185,8 @@ class LocalDatabase(object):
         #         3 - file content checked
         #         4 - snapshot prepared for upload
         #         5 - uploaded
+        #   compression
+        #     Compression algorithm used (NULL, lzma, ...)
         #   delete
         #     Deletion scheduled
         c.execute(
@@ -195,6 +197,7 @@ class LocalDatabase(object):
                     started_tstamp  INTEGER,
                     finished_tstamp INTEGER,
                     uploaded_tstamp INTEGER,
+                    compression     VARCHAR(8),
                     deleted         INTEGER NOT NULL DEFAULT 0
                 )
             """)

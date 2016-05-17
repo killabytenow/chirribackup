@@ -45,6 +45,7 @@ class Snapshot(object):
     started_tstamp  = None
     finished_tstamp = None
     uploaded_tstamp = None
+    compression     = None
 
     def __init__(self, ldb):
         self.ldb = ldb
@@ -77,6 +78,7 @@ class Snapshot(object):
         self.started_tstamp  = None
         self.finished_tstamp = None
         self.uploaded_tstamp = None
+        self.compression     = None
 
         # create snapshot
         self.ldb.connection.execute("INSERT INTO snapshots (snapshot, status) VALUES ( :id, 0 )",
@@ -109,6 +111,7 @@ class Snapshot(object):
         self.started_tstamp  = row["started_tstamp"]
         self.finished_tstamp = row["finished_tstamp"]
         self.uploaded_tstamp = row["uploaded_tstamp"]
+        self.compression     = row["compression"]
         return self
 
 
@@ -565,12 +568,13 @@ class Snapshot(object):
             logger.error("Snapshot %d in unknown state %d." % (self.snapshot_id, self.status))
 
 
-    def desc(self):
+    def desc(self, json = False):
         if self.status < 4:
             raise ChirriException("This snapshot cannot be described -- it is incomplete")
 
-        return ChirriBackup.Crypto.protect_string(
-                json.dumps(
+        r = None
+        if json:
+            r = json.dumps(
                     {
                         "details" : {
                             "snapshot"        : self.snapshot_id,
@@ -579,10 +583,25 @@ class Snapshot(object):
                             "uploaded_tstamp" : self.uploaded_tstamp,
                         },
                         "refs" : self.refs(),
-                    },
-                    sort_keys = True,
-                    indent = 2,
-                    separators=(',', ': ')))
+                    })
+        else:
+            r = "format:          csv\n" \
+              + "snapshot:        %d\n" \
+              + "started_tstamp:  %d\n" \
+              + "finished_tstamp: %d\n" \
+              + "uploaded_tstamp: %d\n" \
+              + "rows:\n" \
+              + "hash;size;perm;uid;gid;mtime;path\n"
+            for ref in self.refs():
+                r += "%s;%d;%d;%d;%d;%d;%s\n" \
+                        % (ref["hash"],
+                           ref["size"],
+                           ref["perm"],
+                           ref["uid"],
+                           ref["gid"],
+                           ref["mtime"],
+                           ref["path"].encode("string_escape").replace(";", "\\x3b"))
+        return ChirriBackup.Crypto.protect_string(r)
 
 
     def destroy(self):

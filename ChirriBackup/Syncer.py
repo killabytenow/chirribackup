@@ -48,6 +48,7 @@ class Syncer(object):
         }
 
     def sync_snapshots(self):
+        logger.info("Syncing snapshots")
         for snp in self.ldb.snapshot_list():
             if snp.deleted:
                 if snp.status == 5:
@@ -69,7 +70,13 @@ class Syncer(object):
                     #   => upload
                     snp.set_attribute("uploaded_tstamp", int(time.time()))
                     desc = snp.desc()
-                    self.sm.upload_data("snapshots/snapshot-%d.txt" % snp.snapshot_id, desc)
+                    target_file = "snapshots/snapshot-%d.txt" % snp.snapshot_id
+                    if self.ldb.compression is not None:
+                        c = ChirriBackup.Compression.Compressor(self.ldb.compression)
+                        desc = c.compress(desc)
+                        desc = c.close()
+                        target_file += "." + self.ldb.compression
+                    self.sm.upload_data(target_file, desc)
                     snp.set_status(5)
                     self.counters["bytes"]     += len(desc)
                     self.counters["snapshots"] += 1
@@ -81,6 +88,7 @@ class Syncer(object):
 
 
     def sync_chunks(self):
+        logger.info("Syncing chunks")
         for chunk in ChirriBackup.Chunk.Chunk.list(self.ldb):
             local_chunk = os.path.realpath(os.path.join(self.ldb.chunks_dir, chunk.get_filename()))
             remote_chunk = "chunks/%s" % chunk.get_filename()
@@ -136,6 +144,7 @@ class Syncer(object):
 
 
     def sync_config_backups(self):
+        logger.info("Syncing config backups")
         for c in self.ldb.config_get():
             if c["status"] == 0:
                 if c["deleted"]:
