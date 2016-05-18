@@ -29,22 +29,22 @@ import logging.handlers
 import sys
 from struct import *
 
-def EscapeString(s, escape_nl = True):
-    s = str(s)
-    r = ""
-    i = 0
-    while i < len(s):
-        x = unpack("B", s[i])
-        if x[0] < 32:
-            if not escape_nl and x[0] == 10:
-                r = r + s[i]
-            else:
-                r = "%s\%02x" % (r, x[0])
-        else:
-            r = r + s[i]
-        i = i + 1
 
-    return r
+def escape_string(s, escape_nl=True):
+    s = str(s)
+    r = []
+    for c in s:
+        x = ord(c)
+        if x < 32:
+            if not escape_nl and x == 10:
+                r.append(c)
+            else:
+                r.append("%" + format(x, "02x"))
+        else:
+            r.append(c)
+
+    return ''.join(r)
+
 
 def IndentString(s, indent = "  ", indent_first_line = True):
     s = str(s)

@@ -89,7 +89,7 @@ class Logger(object):
         #
         def __log(self, n_log_level, log_string, escape_nl, escape):
             if escape:
-                log_string = EscapeString(str(log_string), escape_nl)
+                log_string = escape_string(str(log_string), escape_nl)
             if self.__hooks.has_key(n_log_level):
                 for h in self.__hooks[n_log_level]:
                     h(n_log_level, log_string)
