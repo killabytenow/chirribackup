@@ -33,6 +33,9 @@ import os
 import re
 
 # CONSTANTS
+from chirribackup.exceptions import ChirriException, BadValueException, ChunkBadFilenameException, ChunkBadHashException, \
+    ChunkNotFoundException
+
 READ_BLOCKSIZE = (1024*1024)
 
 # CHUNK CLASS

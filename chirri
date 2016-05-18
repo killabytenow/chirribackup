@@ -29,6 +29,8 @@ from chirribackup.Logger import logger
 import chirribackup.ActionsManager
 import sys
 
+from chirribackup.exceptions import ActionInvocationException, ChirriException
+
 try:
     chirribackup.ActionsManager.invoke(CONFIG.args)
 

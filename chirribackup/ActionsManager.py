@@ -30,6 +30,9 @@ from chirribackup.Logger import logger
 import exceptions
 import traceback
 
+from chirribackup.exceptions import BadActionException, ChirriException, BadParameterException, \
+    ActionInvocationException
+
 action_handlers = {
         "db" : {
             "attribute" : {
