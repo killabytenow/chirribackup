@@ -307,7 +307,7 @@ class DbCheck(chirribackup.actions.BaseAction.BaseAction):
                 fix_level |= 2
                 argv.pop(0)
             else:
-                raise BadParameterException("Unknown flag '%s'." % args[0])
+                raise BadParameterException("Unknown flag '%s'." % argv[0])
         return {
             "fix_level" : fix_level,
         }
