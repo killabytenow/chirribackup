@@ -29,7 +29,8 @@ import logging
 import logging.handlers
 import os
 import time
-from chirribackup.StringFormat import *
+
+from chirribackup.StringFormat import escape_string
 from chirribackup.exceptions import ChirriException, FilesystemException
 
 

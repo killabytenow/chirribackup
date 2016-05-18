@@ -24,7 +24,6 @@
 # 
 ###############################################################################
 
-from chirribackup.exceptions import *
 from chirribackup.Config import CONFIG
 from chirribackup.Logger import logger
 import chirribackup.actions.BaseAction
@@ -34,6 +33,9 @@ import chirribackup.LocalDatabase
 import os
 import re
 import sys
+
+from chirribackup.exceptions import ChirriException, ChunkBadFilenameException, ChunkNotFoundException, \
+    BadParameterException
 
 
 class DbCheck(chirribackup.actions.BaseAction.BaseAction):

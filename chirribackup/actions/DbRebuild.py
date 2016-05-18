@@ -24,7 +24,6 @@
 # 
 ###############################################################################
 
-from chirribackup.exceptions import *
 from chirribackup.Config import CONFIG
 from chirribackup.Logger import logger
 import chirribackup.actions.DbCreator
@@ -36,6 +35,9 @@ import json
 import re
 import sys
 import time
+
+from chirribackup.exceptions import ChunkBadFilenameException, ChirriException, BadParameterException
+
 
 class DbRebuild(chirribackup.actions.DbCreator.DbCreator):
 

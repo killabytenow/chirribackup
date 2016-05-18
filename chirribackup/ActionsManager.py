@@ -26,7 +26,6 @@
 
 from __future__ import absolute_import
 
-from chirribackup.exceptions import *
 from chirribackup.Logger import logger
 import exceptions
 import traceback

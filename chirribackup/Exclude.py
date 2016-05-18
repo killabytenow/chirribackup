@@ -26,9 +26,8 @@
 # 
 ###############################################################################
 
-from chirribackup.exceptions import *
 from chirribackup.Logger import logger
-from chirribackup.exceptions import ExcludeNotFound
+from chirribackup.exceptions import ExcludeNotFound, ChirriException
 
 
 class Exclude(object):

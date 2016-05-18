@@ -26,7 +26,6 @@
 #
 ###############################################################################
 
-from chirribackup.exceptions import *
 from chirribackup.Logger import logger
 import chirribackup.storage.BaseStorage
 import chirribackup.Snapshot
@@ -35,6 +34,8 @@ import os
 import time
 import re
 import sqlite3
+
+from chirribackup.exceptions import ChirriException, ConfigNotFoundException
 
 DB_VERSION = 1
 

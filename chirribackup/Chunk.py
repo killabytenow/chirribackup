@@ -25,7 +25,6 @@
 ###############################################################################
 from __future__ import absolute_import
 
-from chirribackup.exceptions import *
 from chirribackup.Logger import logger
 import chirribackup.Crypto
 import chirribackup.Compression

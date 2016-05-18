@@ -27,7 +27,7 @@
 import logging
 import logging.handlers
 import sys
-from struct import *
+from struct import unpack
 
 
 def escape_string(s, escape_nl=True):
