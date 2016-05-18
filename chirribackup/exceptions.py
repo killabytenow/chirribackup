@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 ###############################################################################
-# chirribackup/ChirriException.py
+# chirribackup/exceptions.py
 #
 #   The Only and Real Chirri Exception
 #
@@ -24,8 +24,11 @@
 # 
 ###############################################################################
 
+from __future__ import absolute_import
+
 import exceptions
 import sys
+
 
 class ChirriException(exceptions.Exception):
 

@@ -24,7 +24,7 @@
 # 
 ###############################################################################
 
-from chirribackup.ChirriException import ChirriException
+from chirribackup.exceptions import ChirriException
 
 def GetStorageManager(backend, ldb, config = False):
     if backend is None:

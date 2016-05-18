@@ -26,7 +26,7 @@
 # 
 ###############################################################################
 
-from chirribackup.ChirriException import ChirriException
+from chirribackup.exceptions import ChirriException
 from chirribackup.Logger import logger
 from googleapiclient import discovery
 from googleapiclient import errors

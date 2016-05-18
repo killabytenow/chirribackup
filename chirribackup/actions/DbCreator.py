@@ -26,7 +26,7 @@
 # 
 ###############################################################################
 
-from chirribackup.ChirriException import ChirriException
+from chirribackup.exceptions import ChirriException
 from chirribackup.Config import CONFIG
 from chirribackup.Logger import logger
 import chirribackup.actions.BaseAction

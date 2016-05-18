@@ -24,7 +24,7 @@
 # 
 ###############################################################################
 
-from chirribackup.ChirriException import ChirriException
+from chirribackup.exceptions import ChirriException
 
 class BaseAction(object):
 

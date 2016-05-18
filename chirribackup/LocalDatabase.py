@@ -26,7 +26,7 @@
 #
 ###############################################################################
 
-from chirribackup.ChirriException import *
+from chirribackup.exceptions import *
 from chirribackup.Logger import logger
 import chirribackup.storage.BaseStorage
 import chirribackup.Snapshot

@@ -23,8 +23,9 @@
 #   with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 ###############################################################################
+from __future__ import absolute_import
 
-from chirribackup.ChirriException import *
+from chirribackup.exceptions import *
 from chirribackup.Logger import logger
 import chirribackup.Crypto
 import chirribackup.Compression
