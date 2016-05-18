@@ -1,9 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 ###############################################################################
-# chirri
+# chirribackup/__init__.py
 #
-#   Chirri Backup main program
+#   I don't WTF is this f*cking file. The only thing I know is that if it
+#   does not exists this fucking project doesn't work.
+#   Hate python
+#     bit more
+#       every day.
 #
 # -----------------------------------------------------------------------------
 # Chirri Backup - Cheap and ugly backup tool
@@ -24,21 +28,6 @@
 # 
 ###############################################################################
 
-from chirribackup.ChirriException import *
-from chirribackup.Config import CONFIG
-from chirribackup.Logger import logger
-import chirribackup.ActionsManager
-import sys
+dirname = __path__[0]        # Package's main folder
+#__path__.append(dirname+"/../classes")
 
-try:
-    chirribackup.ActionsManager.invoke(CONFIG.args)
-
-except ActionInvocationException, ex:
-    logger.error(ex.desc())
-    sys.exit(1)
-
-except ChirriException, ex:
-    logger.critical(str(ex))
-    sys.exit(1)
-
-sys.exit(0)

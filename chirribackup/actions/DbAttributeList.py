@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 ###############################################################################
-# chirri
+# chirribackup/actions/DbAttributeList.py
 #
-#   Chirri Backup main program
+#   List db parameters
 #
 # -----------------------------------------------------------------------------
 # Chirri Backup - Cheap and ugly backup tool
@@ -27,18 +27,49 @@
 from chirribackup.ChirriException import *
 from chirribackup.Config import CONFIG
 from chirribackup.Logger import logger
-import chirribackup.ActionsManager
+import chirribackup.actions.BaseAction
+import chirribackup.LocalDatabase
+import os
+import json
 import sys
 
-try:
-    chirribackup.ActionsManager.invoke(CONFIG.args)
 
-except ActionInvocationException, ex:
-    logger.error(ex.desc())
-    sys.exit(1)
+class DbAttributeList(chirribackup.actions.BaseAction.BaseAction):
 
-except ChirriException, ex:
-    logger.critical(str(ex))
-    sys.exit(1)
+    fix = 0
+    rebuild = 0
 
-sys.exit(0)
+    help = {
+        "synopsis": "List db parameters",
+        "description": [
+            "This command list all database attributes.",
+        ],
+        "args": None
+    }
+
+
+    def parse_args(self, argv):
+        return {}
+
+
+    def go(self):
+        self.ldb = chirribackup.LocalDatabase.LocalDatabase(CONFIG.path)
+
+        f = [ 32, 5, 5, 32 ]
+        print ("%" + ("s %".join("-{0}".format(n) for n in f)) + "s") % (
+                    "key",
+                    "save",
+                    "type",
+                    "value")
+        l = [ ]
+        for i in f:
+            l.append("-" * i)
+        print " ".join(l)
+        for k,a in sorted(self.ldb.config_attrib_list().iteritems()):
+            print ("%" + ("s %".join("-{0}".format(n) for n in f)) + "s") % (
+                    k,
+                    "yes" if a["save"] != 0 else "no",
+                    a["type"],
+                    a["value"])
+
+

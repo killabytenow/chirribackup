@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 ###############################################################################
-# chirri
+# chirribackup/actions/DbConfigList.py
 #
-#   Chirri Backup main program
+#   Print a list of saved configurations
 #
 # -----------------------------------------------------------------------------
 # Chirri Backup - Cheap and ugly backup tool
@@ -27,18 +27,40 @@
 from chirribackup.ChirriException import *
 from chirribackup.Config import CONFIG
 from chirribackup.Logger import logger
-import chirribackup.ActionsManager
+import chirribackup.actions.BaseAction
+import chirribackup.Crypto
+import chirribackup.Input
+import chirribackup.LocalDatabase
+import os
+import json
 import sys
+import time
 
-try:
-    chirribackup.ActionsManager.invoke(CONFIG.args)
 
-except ActionInvocationException, ex:
-    logger.error(ex.desc())
-    sys.exit(1)
+class DbConfigList(chirribackup.actions.BaseAction.BaseAction):
 
-except ChirriException, ex:
-    logger.critical(str(ex))
-    sys.exit(1)
+    fix = 0
+    rebuild = 0
 
-sys.exit(0)
+    help = {
+        "synopsis": "Print the list of saved configurations",
+        "description": None,
+        "args": None,
+    }
+
+
+    def parse_args(self, argv):
+        return {}
+
+
+    def go(self):
+        self.ldb = chirribackup.LocalDatabase.LocalDatabase(CONFIG.path)
+        print "config_id status  tstamp              deleted"
+        print "--------- ------- ------------------- -------"
+        for c in self.ldb.config_get():
+            print "%9s %7s %19s %s" \
+                % (c["config_id"],
+                   c["status"],
+                   time.strftime("%d/%m/%Y %H:%M:%S", time.localtime(c["tstamp"])) if c["tstamp"] is not None else None,
+                   "deleted" if c["deleted"] != 0 else "")
+

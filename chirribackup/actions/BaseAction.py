@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 ###############################################################################
-# chirri
+# chirribackup/actions/BaseAction.py
 #
-#   Chirri Backup main program
+#   Base action
 #
 # -----------------------------------------------------------------------------
 # Chirri Backup - Cheap and ugly backup tool
@@ -24,21 +24,16 @@
 # 
 ###############################################################################
 
-from chirribackup.ChirriException import *
-from chirribackup.Config import CONFIG
-from chirribackup.Logger import logger
-import chirribackup.ActionsManager
-import sys
+from chirribackup.ChirriException import ChirriException
 
-try:
-    chirribackup.ActionsManager.invoke(CONFIG.args)
+class BaseAction(object):
 
-except ActionInvocationException, ex:
-    logger.error(ex.desc())
-    sys.exit(1)
+    ldb = None
+    help = None
 
-except ChirriException, ex:
-    logger.critical(str(ex))
-    sys.exit(1)
+    def parse_args(self, argv):
+        raise ChirriException("This method must be overrided.")
 
-sys.exit(0)
+    def go(self):
+        raise ChirriException("This method must be overrided.")
+

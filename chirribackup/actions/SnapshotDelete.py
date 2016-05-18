@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 ###############################################################################
-# chirri
+# chirribackup/actions/SnapshotDetails.py
 #
-#   Chirri Backup main program
+#   Print details about an snapshot
 #
 # -----------------------------------------------------------------------------
 # Chirri Backup - Cheap and ugly backup tool
@@ -24,21 +24,37 @@
 # 
 ###############################################################################
 
-from chirribackup.ChirriException import *
+from chirribackup.ChirriException import ChirriException
 from chirribackup.Config import CONFIG
 from chirribackup.Logger import logger
-import chirribackup.ActionsManager
+import chirribackup.actions.BaseAction
+import chirribackup.LocalDatabase
+import chirribackup.Snapshot
 import sys
 
-try:
-    chirribackup.ActionsManager.invoke(CONFIG.args)
+class SnapshotDelete(chirribackup.actions.BaseAction.BaseAction):
 
-except ActionInvocationException, ex:
-    logger.error(ex.desc())
-    sys.exit(1)
+    help = {
+        "synopsis": "Delete snapshot",
+        "description": [
+            "Delete snapshot and data related to it.",
+        ],
+        "args": [
+            [ "{snapshot_id}",
+                "The snapshot_id of the selected snapshot."
+            ],
+        ]
+    }
 
-except ChirriException, ex:
-    logger.critical(str(ex))
-    sys.exit(1)
 
-sys.exit(0)
+    def parse_args(self, argv):
+        return {
+            "snapshot_id": int(argv.pop(0)),
+        }
+
+
+    def go(self, snapshot_id):
+        self.ldb = chirribackup.LocalDatabase.LocalDatabase(CONFIG.path)
+        chirribackup.Snapshot.Snapshot(self.ldb).load(snapshot_id).delete()
+
+

@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 ###############################################################################
-# chirri
+# chirribackup/actions/DbConfigSave.py
 #
-#   Chirri Backup main program
+#   Save config to file for later use in commands:
+#       - db init
+#       - db rebuild
 #
 # -----------------------------------------------------------------------------
 # Chirri Backup - Cheap and ugly backup tool
@@ -27,18 +29,38 @@
 from chirribackup.ChirriException import *
 from chirribackup.Config import CONFIG
 from chirribackup.Logger import logger
-import chirribackup.ActionsManager
+import chirribackup.actions.BaseAction
+import chirribackup.Crypto
+import chirribackup.Input
+import chirribackup.LocalDatabase
+import os
+import json
 import sys
 
-try:
-    chirribackup.ActionsManager.invoke(CONFIG.args)
 
-except ActionInvocationException, ex:
-    logger.error(ex.desc())
-    sys.exit(1)
+class DbConfigSave(chirribackup.actions.BaseAction.BaseAction):
 
-except ChirriException, ex:
-    logger.critical(str(ex))
-    sys.exit(1)
+    fix = 0
+    rebuild = 0
 
-sys.exit(0)
+    help = {
+        "synopsis": "Keep a copy of current database configuration in backup",
+        "description": [
+            "This command pushes an snapshot of the current database",
+            "configuration (including exclude list too) to the remote",
+            "storage. This information may be used later for feeding other",
+            "commands like 'db init' or 'db rebuild'.",
+        ],
+        "args": None,
+    }
+
+
+    def parse_args(self, argv):
+        return {}
+
+
+    def go(self):
+        self.ldb = chirribackup.LocalDatabase.LocalDatabase(CONFIG.path)
+        self.ldb.config_save()
+
+

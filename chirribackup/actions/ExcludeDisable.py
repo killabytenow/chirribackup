@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 ###############################################################################
-# chirri
+# chirribackup/actions/ExcludeDisable.py
 #
-#   Chirri Backup main program
+#   Disable a exclude rule
 #
 # -----------------------------------------------------------------------------
 # Chirri Backup - Cheap and ugly backup tool
@@ -24,21 +24,39 @@
 # 
 ###############################################################################
 
-from chirribackup.ChirriException import *
+from chirribackup.ChirriException import ChirriException
 from chirribackup.Config import CONFIG
 from chirribackup.Logger import logger
-import chirribackup.ActionsManager
+import chirribackup.actions.BaseAction
+import chirribackup.Exclude
+import chirribackup.LocalDatabase
+import os
 import sys
 
-try:
-    chirribackup.ActionsManager.invoke(CONFIG.args)
+class ExcludeDisable(chirribackup.actions.BaseAction.BaseAction):
 
-except ActionInvocationException, ex:
-    logger.error(ex.desc())
-    sys.exit(1)
+    fix = 0
+    rebuild = 0
 
-except ChirriException, ex:
-    logger.critical(str(ex))
-    sys.exit(1)
+    help = {
+        "synopsis": "Disable a exclude rule",
+        "description": None,
+        "args": [
+            [ "{exclude_id}",
+                "The exclude rule that will be disabled.",
+            ]
+        ]
+    }
 
-sys.exit(0)
+ 
+    def parse_args(self, argv):
+        return {
+            "exclude_id": argv.pop(0),
+        }
+
+
+    def go(self, exclude_id):
+        self.ldb = chirribackup.LocalDatabase.LocalDatabase(CONFIG.path)
+        chirribackup.Exclude.Exclude(self.ldb, exclude_id).disable()
+
+

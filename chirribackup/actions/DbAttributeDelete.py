@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 ###############################################################################
-# chirri
+# chirribackup/actions/DbAttributeDelete.py
 #
-#   Chirri Backup main program
+#   Delete a db parameter
 #
 # -----------------------------------------------------------------------------
 # Chirri Backup - Cheap and ugly backup tool
@@ -27,18 +27,42 @@
 from chirribackup.ChirriException import *
 from chirribackup.Config import CONFIG
 from chirribackup.Logger import logger
-import chirribackup.ActionsManager
+import chirribackup.actions.BaseAction
+import chirribackup.LocalDatabase
+import os
+import json
 import sys
 
-try:
-    chirribackup.ActionsManager.invoke(CONFIG.args)
 
-except ActionInvocationException, ex:
-    logger.error(ex.desc())
-    sys.exit(1)
+class DbAttributeDelete(chirribackup.actions.BaseAction.BaseAction):
 
-except ChirriException, ex:
-    logger.critical(str(ex))
-    sys.exit(1)
+    fix = 0
+    rebuild = 0
 
-sys.exit(0)
+    help = {
+        "synopsis": "Delete a db parameter",
+        "description": [
+            "This command allows to get the value of a database attribute.",
+            "",
+            "Please note that this command is HIGHLY DESTRUCTIVE and it is no",
+            "recommended to alter the database configuration in this way.",
+        ],
+        "args": [
+            [ "{config_key}",
+                "Configuration key: the name of the parameter.",
+            ],
+        ]
+    }
+
+
+    def parse_args(self, argv):
+        return {
+            "key": argv.pop(0),
+        }
+
+
+    def go(self, key):
+        self.ldb = chirribackup.LocalDatabase.LocalDatabase(CONFIG.path)
+        self.ldb.config_attrib_delete(key)
+
+

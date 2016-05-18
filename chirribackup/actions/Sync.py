@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 ###############################################################################
-# chirri
+# chirribackup/actions/Info.py
 #
-#   Chirri Backup main program
+#   Get info
 #
 # -----------------------------------------------------------------------------
 # Chirri Backup - Cheap and ugly backup tool
@@ -24,21 +24,35 @@
 # 
 ###############################################################################
 
-from chirribackup.ChirriException import *
+from chirribackup.ChirriException import ChirriException
 from chirribackup.Config import CONFIG
 from chirribackup.Logger import logger
-import chirribackup.ActionsManager
+import chirribackup.actions.BaseAction
+import chirribackup.LocalDatabase
+import chirribackup.Syncer
 import sys
 
-try:
-    chirribackup.ActionsManager.invoke(CONFIG.args)
+class Sync(chirribackup.actions.BaseAction.BaseAction):
 
-except ActionInvocationException, ex:
-    logger.error(ex.desc())
-    sys.exit(1)
+    help = {
+        "synopsis": "Sync remote data",
+        "description": None,
+        "args": None,
+    }
 
-except ChirriException, ex:
-    logger.critical(str(ex))
-    sys.exit(1)
+ 
+    def parse_args(self, argv):
+        return {}
 
-sys.exit(0)
+
+    def go(self):
+        self.ldb = chirribackup.LocalDatabase.LocalDatabase(CONFIG.path)
+        syncer = chirribackup.Syncer.Syncer(self.ldb)
+        syncer.run()
+        print "Finished succesfully:"
+        print "  - Uploaded %d snapshots" % syncer.counters["snapshots"]
+        print "  - Uploaded %d chunks"    % syncer.counters["chunks"]
+        print "  - Uploaded %d bytes" % syncer.counters["bytes"]
+        print "  - Uploaded %d files" % syncer.counters["files"]
+
+
