@@ -83,7 +83,7 @@ class ExcludeAdd(chirribackup.actions.BaseAction.BaseAction):
         r["expr_type"] = argv.pop(0)
         if len(argv) > 1:
             if argv[0] != "ignorecase" and argv[0] != "ignore_case":
-                raise ChirriException("Unknown flag '%s'." % args[0])
+                raise ChirriException("Unknown flag '%s'." % argv[0])
             argv.pop(0)
             r["ignore_case"] = 1
         r["exclude"] = argv.pop(0)
