@@ -55,7 +55,10 @@ class Syncer(object):
                     # uploaded snapshot marked for deletion
                     #   => delete remote snapshot
                     logger.info("[DEL] Remote snapshot %d" % snp.snapshot_id)
-                    self.sm.delete_file("snapshots/snapshot-%d.txt" % snp.snapshot_id)
+                    target_file = "snapshots/snapshot-%d.txt" % snp.snapshot_id
+                    if snp.compression is not None:
+                        target_file += "." + snp.compression
+                    self.sm.delete_file(target_file)
                 else:
                     logger.info("[DEL] Local snapshot %d" % snp.snapshot_id)
 
@@ -68,14 +71,17 @@ class Syncer(object):
                 if snp.status == 4:
                     # snapshot prepared for upload
                     #   => upload
+                    target_file = "snapshots/snapshot-%d.txt" % snp.snapshot_id
                     snp.set_attribute("uploaded_tstamp", int(time.time()))
                     desc = snp.desc()
-                    target_file = "snapshots/snapshot-%d.txt" % snp.snapshot_id
                     if self.ldb.compression is not None:
                         c = ChirriBackup.Compression.Compressor(self.ldb.compression)
-                        desc = c.compress(desc)
-                        desc = c.close()
-                        target_file += "." + self.ldb.compression
+                        zdesc = c.compress(desc)
+                        zdesc += c.close()
+                        if len(zdesc) < len(desc):
+                            snp.set_attribute("compression", self.ldb.compression)
+                            target_file += "." + self.ldb.compression
+                            desc = zdesc
                     self.sm.upload_data(target_file, desc)
                     snp.set_status(5)
                     self.counters["bytes"]     += len(desc)

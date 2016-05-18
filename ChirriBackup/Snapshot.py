@@ -497,6 +497,7 @@ class Snapshot(object):
 
     def set_attribute(self, attribute, value):
         if attribute not in [
+                                "compression",
                                 "deleted",
                                 "finished_tstamp",
                                 "started_tstamp",
@@ -585,12 +586,12 @@ class Snapshot(object):
                         "refs" : self.refs(),
                     })
         else:
-            r = "format:          csv\n" \
-              + "snapshot:        %d\n" \
-              + "started_tstamp:  %d\n" \
-              + "finished_tstamp: %d\n" \
-              + "uploaded_tstamp: %d\n" \
-              + "rows:\n" \
+            r = "format:          csv\n"                       \
+              + "snapshot:        %d\n" % self.snapshot_id     \
+              + "started_tstamp:  %d\n" % self.started_tstamp  \
+              + "finished_tstamp: %d\n" % self.finished_tstamp \
+              + "uploaded_tstamp: %d\n" % self.uploaded_tstamp \
+              + "rows:\n"                                      \
               + "hash;size;perm;uid;gid;mtime;path\n"
             for ref in self.refs():
                 r += "%s;%d;%d;%d;%d;%d;%s\n" \

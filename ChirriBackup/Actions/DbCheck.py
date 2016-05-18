@@ -244,6 +244,16 @@ class DbCheck(ChirriBackup.Actions.BaseAction.BaseAction):
 
 
     def check_db(self):
+        # add snapshot compression column
+        column_compression_exists = False
+        for c in self.ldb.connection.execute("PRAGMA table_info(snapshots)"):
+            if c["name"] == "compression":
+                column_compression_exists = True
+        if not column_compression_exists:
+            logger.warning("Adding missing column snapshots.compression")
+            self.ldb.connection.execute("ALTER TABLE snapshots ADD COLUMN compression VARCHAR(8)")
+        self.ldb.connection.commit()
+
         # check for unknown config values
         # check status value
         rebuild = self.ldb.status < 100
