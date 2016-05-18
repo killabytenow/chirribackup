@@ -29,6 +29,10 @@ from __future__ import absolute_import
 import exceptions
 import sys
 
+__all__ = ["ChirriException", "ActionInvocationException", "BadActionException", "BadParameterException",
+           "BadValueException", "ConfigNotFoundException", "ChunkNotFoundException", "ChunkBadHashException",
+           "ChunkBadFilenameException", "BadCompressionException"]
+
 
 class ChirriException(exceptions.Exception):
 
@@ -41,7 +45,7 @@ class ChirriException(exceptions.Exception):
         self.__callers_file = sys._getframe(1).f_code.co_filename
         self.__callers_lino = sys._getframe(1).f_lineno
         self.__callers_name = sys._getframe(1).f_code.co_name
-        self.__desc = self.__class__.__name__ + ": " + desc;
+        self.__desc = self.__class__.__name__ + ": " + desc
 
 
     def desc(self):
@@ -81,5 +85,6 @@ class ChunkBadFilenameException(ChirriException):
 
 class BadCompressionException(ChirriException):
     """Bad compression algorithm"""
+
 
 
