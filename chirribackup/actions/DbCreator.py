@@ -36,6 +36,9 @@ import chirribackup.Exclude
 import os
 import sys
 
+from chirribackup.storage import BaseStorage
+
+
 class DbCreator(chirribackup.actions.BaseAction.BaseAction):
 
     def get_config(self, config):
@@ -66,7 +69,7 @@ class DbCreator(chirribackup.actions.BaseAction.BaseAction):
             config["compression"] = None
 
         # Instantiate a config storage manager
-        sm = chirribackup.Storage.BaseStorage.GetStorageManager(
+        sm = BaseStorage.GetStorageManager(
                 config["storage_type"],
                 self.ldb,
                 config=True)
