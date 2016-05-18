@@ -23,11 +23,10 @@
 #   with this program. If not, see <http://www.gnu.org/licenses/>.
 # 
 ###############################################################################
-
+from chirribackup import ActionsManager
 from chirribackup.exceptions import ChirriException
 from chirribackup.Config import CONFIG
 from chirribackup.Logger import logger
-import chirribackup.ActionsManager
 import chirribackup.actions.DbCreator
 import chirribackup.LocalDatabase
 import os
@@ -75,7 +74,7 @@ class Help(chirribackup.actions.BaseAction.BaseAction):
         print ""
         print "Available commands:"
         print ""
-        all_help = self.__get_all_help_r(chirribackup.ActionsManager.action_handlers)
+        all_help = self.__get_all_help_r(ActionsManager.action_handlers)
         max_length = max([len(x) for x in all_help.iterkeys()])
         f = "    %%-%ds   %%s" % max_length
         for command, synopsys in sorted(all_help.iteritems()):

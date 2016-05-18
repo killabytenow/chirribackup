@@ -26,11 +26,10 @@
 #   with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 ###############################################################################
-
+from chirribackup import ActionsManager
 from chirribackup.Logger import logger
 from optparse import OptionError
 from optparse import OptionParser
-import chirribackup.ActionsManager
 import os
 import re
 import sys
@@ -50,7 +49,7 @@ class Config(object):
                         version="%prog 1.0",
                         usage="%s [options] {directory} {action} [action args...]" % sys.argv[0],
                         epilog="Use 'help' action for more information. Other valid commands: %s" \
-                                % " ".join(chirribackup.ActionsManager.action_handlers.keys())
+                                % " ".join(ActionsManager.action_handlers.keys())
                         )
             parser.add_option("-D", "--debug",
                                   dest="verbosity",
