@@ -23,8 +23,9 @@
 #   with this program. If not, see <http://www.gnu.org/licenses/>.
 # 
 ###############################################################################
+import traceback
 
-from chirribackup.exceptions import ChirriException
+from chirribackup.exceptions import ChirriException, ChunkNotFoundException, ChunkBadFilenameException
 from chirribackup.Logger import logger
 import chirribackup.Snapshot
 import json

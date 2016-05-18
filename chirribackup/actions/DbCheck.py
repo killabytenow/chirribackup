@@ -209,7 +209,7 @@ class DbCheck(chirribackup.actions.BaseAction.BaseAction):
                                     { "hash" : chunk.hash })
                             self.ldb.connection.commit()
 
-                except exceptions.IOError, ex:
+                except IOError, ex:
                     logger.error("Cannot read chunk %s: %s" % (fpath, ex))
                     if self.do_fix("Wat do?"):
                         raise ChirriException("Not implemented.")

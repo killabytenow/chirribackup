@@ -28,6 +28,8 @@
 
 from chirribackup.exceptions import *
 from chirribackup.Logger import logger
+from chirribackup.exceptions import ExcludeNotFound
+
 
 class Exclude(object):
 

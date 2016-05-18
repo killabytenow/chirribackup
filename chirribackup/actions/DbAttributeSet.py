@@ -24,7 +24,6 @@
 # 
 ###############################################################################
 
-from chirribackup.exceptions import *
 from chirribackup.Config import CONFIG
 from chirribackup.Logger import logger
 import chirribackup.actions.BaseAction
@@ -32,6 +31,8 @@ import chirribackup.LocalDatabase
 import os
 import json
 import sys
+
+from chirribackup.exceptions import UnknownParameterException
 
 
 class DbAttributeSet(chirribackup.actions.BaseAction.BaseAction):

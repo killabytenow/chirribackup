@@ -31,7 +31,8 @@ import sys
 
 __all__ = ["ChirriException", "ActionInvocationException", "BadActionException", "BadParameterException",
            "BadValueException", "ConfigNotFoundException", "ChunkNotFoundException", "ChunkBadHashException",
-           "ChunkBadFilenameException", "BadCompressionException"]
+           "ChunkBadFilenameException", "BadCompressionException", "ExcludeNotFound", "FilesystemException",
+           "UnknownParameterException"]
 
 
 class ChirriException(exceptions.Exception):
@@ -78,13 +79,22 @@ class ChunkNotFoundException(ChirriException):
     """Chunk not found"""
 
 class ChunkBadHashException(ChirriException):
-    """Chunk not found"""
+    pass
 
 class ChunkBadFilenameException(ChirriException):
-    """Chunk not found"""
+    pass
 
 class BadCompressionException(ChirriException):
     """Bad compression algorithm"""
 
 
+class ExcludeNotFound(ChirriException):
+    pass
 
+
+class FilesystemException(ChirriException):
+    pass
+
+
+class UnknownParameterException(ChirriException):
+    pass

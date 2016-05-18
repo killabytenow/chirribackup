@@ -24,7 +24,7 @@
 # 
 ###############################################################################
 
-from chirribackup.exceptions import ChirriException
+from chirribackup.exceptions import ChirriException, BadParameterException
 from chirribackup.Config import CONFIG
 from chirribackup.Logger import logger
 import chirribackup.actions.DbCreator

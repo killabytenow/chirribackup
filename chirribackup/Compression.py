@@ -24,7 +24,7 @@
 #
 ###############################################################################
 
-from chirribackup.exceptions import ChirriException
+from chirribackup.exceptions import BadCompressionException
 from chirribackup.Logger import logger
 import json
 

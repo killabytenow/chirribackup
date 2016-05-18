@@ -29,10 +29,11 @@ import logging
 import logging.handlers
 import os
 import time
-import chirribackup.exceptions
 from chirribackup.StringFormat import *
+from chirribackup.exceptions import ChirriException, FilesystemException
 
-class LoggerException(chirribackup.exceptions.ChirriException):
+
+class LoggerException(ChirriException):
     """Exception raised by the Logger methods."""
 
 
