@@ -29,7 +29,7 @@ from chirribackup.Config import CONFIG
 from chirribackup.Logger import logger
 import chirribackup.actions.BaseAction
 import chirribackup.Crypto
-import chirribackup.Exclude
+import chirribackup.exclude
 import chirribackup.LocalDatabase
 import os
 import sys
@@ -92,7 +92,7 @@ class ExcludeAdd(chirribackup.actions.BaseAction.BaseAction):
 
     def go(self, exclude, expr_type, ignore_case = 0, disabled = 0):
         self.ldb = chirribackup.LocalDatabase.LocalDatabase(CONFIG.path)
-        chirribackup.Exclude.Exclude(self.ldb).new(
+        chirribackup.exclude.Exclude(self.ldb).new(
                     exclude     = exclude,
                     expr_type   = expr_type,
                     ignore_case = ignore_case,

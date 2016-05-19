@@ -28,7 +28,7 @@ from chirribackup.exceptions import ChirriException
 from chirribackup.Config import CONFIG
 from chirribackup.Logger import logger
 import chirribackup.actions.BaseAction
-import chirribackup.Exclude
+import chirribackup.exclude
 import chirribackup.LocalDatabase
 import os
 import sys
@@ -53,7 +53,7 @@ class ExcludeList(chirribackup.actions.BaseAction.BaseAction):
         self.ldb = chirribackup.LocalDatabase.LocalDatabase(CONFIG.path)
         print "id   disabled type     ignore_case expression"
         print "---- -------- -------- ----------- --------------------------------------------------"
-        for x in chirribackup.Exclude.Exclude.list(self.ldb):
+        for x in chirribackup.exclude.Exclude.list(self.ldb):
             print "%4d %-8s %-8s %-11s %s" \
                 % (x.exclude_id,
                    "disabled" if x.disabled != 0 else "",

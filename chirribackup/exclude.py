@@ -26,38 +26,35 @@
 # 
 ###############################################################################
 
-from chirribackup.Logger import logger
 from chirribackup.exceptions import ExcludeNotFound, ChirriException
 
 
 class Exclude(object):
-
-    ldb         = None
-    exclude_id  = None
-    exclude     = None
-    expr_type   = None
+    ldb = None
+    exclude_id = None
+    exclude = None
+    expr_type = None
     ignore_case = None
-    disabled    = None
+    disabled = None
 
-
-    def __init__(self, ldb, exclude_id = None):
+    def __init__(self, ldb, exclude_id=None):
         self.ldb = ldb
         if exclude_id is not None:
             self.load(exclude_id)
 
-
     @classmethod
     def parse_expr_type(cls, expr_type):
-        if  isinstance(expr_type, (int, long)) \
-        and expr_type >= 0 and expr_type <= 2:
+        if isinstance(expr_type, (int, long)) and 0 <= expr_type <= 2:
             return expr_type
 
-        if expr_type == "literal":  return 0
-        if expr_type == "wildcard": return 1
-        if expr_type == "re":       return 2
+        if expr_type == "literal":
+            return 0
+        elif expr_type == "wildcard":
+            return 1
+        elif expr_type == "re":
+            return 2
 
         raise ChirriException("Invalid expression type '%s'." % expr_type)
-
 
     def new(self, exclude, expr_type, ignore_case, disabled):
         expr_type = self.parse_expr_type(expr_type)
@@ -73,7 +70,7 @@ class Exclude(object):
         self.exclude     = exclude
         self.expr_type   = expr_type
         self.ignore_case = ignore_case if ignore_case is not None else 0
-        self.disabled    = disabled    if disabled    is not None else 0
+        self.disabled    = disabled if disabled is not None else 0
 
         # insert in db
         self.ldb.connection.execute(
@@ -81,20 +78,19 @@ class Exclude(object):
                 INSERT INTO excludes (exclude_id, exclude, expr_type, ignore_case, disabled)
                     VALUES (:exclude_id, :exclude, :expr_type, :ignore_case, :disabled)
             """, {
-                "exclude_id"  : self.exclude_id,
-                "exclude"     : self.exclude,
-                "expr_type"   : self.expr_type,
-                "ignore_case" : self.ignore_case,
-                "disabled"    : self.disabled,
+                "exclude_id": self.exclude_id,
+                "exclude": self.exclude,
+                "expr_type": self.expr_type,
+                "ignore_case": self.ignore_case,
+                "disabled": self.disabled,
             })
 
         return self
 
-
     def load(self, exclude_id):
         x = self.ldb.connection.execute(
             "SELECT * FROM excludes WHERE exclude_id = :exclude_id",
-            { "exclude_id" : exclude_id }).fetchone()
+            {"exclude_id": exclude_id}).fetchone()
 
         if x is None:
             raise ExcludeNotFound("Exclude '%s' not found." % exclude_id)
@@ -105,14 +101,16 @@ class Exclude(object):
         self.ignore_case = x["ignore_case"]
         self.disabled    = x["disabled"]
 
-        if self.expr_type == 0: self.expr_type = "literal"
-        if self.expr_type == 1: self.expr_type = "wildcard"
-        if self.expr_type == 2: self.expr_type = "re"
+        if self.expr_type == 0:
+            self.expr_type = "literal"
+        elif self.expr_type == 1:
+            self.expr_type = "wildcard"
+        elif self.expr_type == 2:
+            self.expr_type = "re"
 
         return self
 
-
-    def enable(self, enable = True):
+    def enable(self, enable=True):
         self.disabled = 0 if enable else 1
         self.ldb.connection.execute(
             """
@@ -120,14 +118,12 @@ class Exclude(object):
                 SET disabled = :disabled
                 WHERE exclude_id = :exclude_id
             """, {
-                "exclude_id" : self.exclude_id,
-                "disabled" : self.disabled,
+                "exclude_id": self.exclude_id,
+                "disabled": self.disabled,
             })
 
-
-    def disable(self, disable = True):
+    def disable(self, disable=True):
         self.enable(not disable)
-
 
     def delete(self):
         self.ldb.connection.execute(
@@ -135,15 +131,14 @@ class Exclude(object):
                 DELETE FROM excludes
                 WHERE exclude_id = :exclude_id
             """, {
-                "exclude_id" : self.exclude_id,
+                "exclude_id": self.exclude_id,
             })
-        self.ldb         = None
-        self.exclude_id  = None
-        self.exclude     = None
-        self.expr_type   = None
+        self.ldb = None
+        self.exclude_id = None
+        self.exclude = None
+        self.expr_type = None
         self.ignore_case = None
-        self.disabled    = None
-
+        self.disabled = None
 
     @classmethod
     def list(cls, ldb):
@@ -151,5 +146,3 @@ class Exclude(object):
         for x in ldb.connection.execute("SELECT exclude_id FROM excludes"):
             l.append(Exclude(ldb, x["exclude_id"]))
         return l
-
-

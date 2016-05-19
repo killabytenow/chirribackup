@@ -32,7 +32,7 @@ from chirribackup.Logger import logger
 import chirribackup.actions.BaseAction
 import chirribackup.LocalDatabase
 import chirribackup.Input
-import chirribackup.Exclude
+import chirribackup.exclude
 import os
 import sys
 
@@ -126,7 +126,7 @@ class DbCreator(chirribackup.actions.BaseAction.BaseAction):
 
         if excludes is not None:
             for x in excludes:
-                chirribackup.Exclude.Exclude(self.ldb).new(
+                chirribackup.exclude.Exclude(self.ldb).new(
                         exclude     = x["exclude"],
                         expr_type   = x["expr_type"],
                         ignore_case = x["ignore_case"],

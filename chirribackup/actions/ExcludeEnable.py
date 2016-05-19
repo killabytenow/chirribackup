@@ -28,7 +28,7 @@ from chirribackup.exceptions import ChirriException
 from chirribackup.Config import CONFIG
 from chirribackup.Logger import logger
 import chirribackup.actions.BaseAction
-import chirribackup.Exclude
+import chirribackup.exclude
 import chirribackup.LocalDatabase
 import os
 import sys
@@ -57,6 +57,6 @@ class ExcludeEnable(chirribackup.actions.BaseAction.BaseAction):
 
     def go(self, exclude_id):
         self.ldb = chirribackup.LocalDatabase.LocalDatabase(CONFIG.path)
-        chirribackup.Exclude.Exclude(self.ldb, exclude_id).enable()
+        chirribackup.exclude.Exclude(self.ldb, exclude_id).enable()
 
 
