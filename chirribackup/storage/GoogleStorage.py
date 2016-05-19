@@ -97,11 +97,14 @@ class GoogleStorage(chirribackup.storage.BaseStorage.BaseStorage):
 
     def upload_file(self, remote_file, local_file):
         # calculate md5sum of uploaded file
+        size = 0
         h = hashlib.md5()
         with open(local_file, "rb") as f:
             for chunk in iter(lambda: f.read(4096), b""):
+                size = len(chunk)
                 h.update(chunk)
         md5sum = base64.b64encode(h.digest())
+        logger.debug("Going to upload %d bytes" % size)
 
         # upload file
         with open(local_file, "rb") as f:
@@ -120,6 +123,7 @@ class GoogleStorage(chirribackup.storage.BaseStorage.BaseStorage):
     def upload_data(self, remote_file, data):
         # calculate md5sum of uploaded file
         md5sum = base64.b64encode(hashlib.md5(data).digest())
+        logger.debug("Going to upload %d bytes" % len(data))
 
         # upload file
         req = self.service.objects().insert(
