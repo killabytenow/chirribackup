@@ -112,8 +112,11 @@ class Syncer(object):
                     # referenced chunk, not uploaded => upload
                     try:
                         self.sm.upload_file(remote_chunk, local_chunk)
-                        os.unlink(local_chunk)
                         chunk.set_status(1)
+                        # NOTE: this commit is important: sets file as uploaded, then
+                        # after the local chunk may be unlinked.
+                        self.ldb.connection.commit()
+                        os.unlink(local_chunk)
                         self.counters["bytes"]  += chunk.size
                         self.counters["chunks"] += 1
                         self.counters["files"]  += 1
