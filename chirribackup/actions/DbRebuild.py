@@ -109,28 +109,12 @@ class DbRebuild(chirribackup.actions.DbCreator.DbCreator):
 
 
     def status_1_download_snapshots(self):
-        for s in self.ldb.snapshot_list():
-            if s.status == -1:
-                data = self.sm.download_data("snapshots/snapshot-%d.txt" % s.snapshot_id)
-                data = chirribackup.Crypto.unprotect_string(data)
-                jd = json.loads(data)
-                for a in [
-                            "started_tstamp",
-                            "finished_tstamp",
-                            "uploaded_tstamp",
-                         ]:
-                    s.set_attribute(a, jd["details"][a])
-                for fr in jd["refs"]:
-                    s.file_ref_save(
-                            fr["path"].encode('utf-8'),
-                            fr["hash"].encode('utf-8'),
-                            int(fr["size"]),
-                            int(fr["perm"]),
-                            int(fr["uid"]),
-                            int(fr["gid"]),
-                            int(fr["mtime"]),
-                            int(fr["status"]))
-                s.set_status(5, False)
+        for snp in self.ldb.snapshot_list():
+            if snp.status == -1:
+                data = self.sm.download_data("snapshots/snapshot-%d.txt" % snp.snapshot_id)
+                data = ChirriBackup.Crypto.unprotect_string(data)
+                snp.desc_parse(data)
+                snp.set_status(5, False)
 
         # commit -- now it is a good commit point
         self.ldb.status = 2
