@@ -71,7 +71,7 @@ class DbRebuild(chirribackup.actions.DbCreator.DbCreator):
 
 
     def status_0_remote_file_listing(self):
-        snapshot_file_re = re.compile("^snapshots/snapshot-([1-9][0-9]*)\\.txt$")
+        snapshot_file_re = re.compile("^snapshots/snapshot-([1-9][0-9]*)\\.txt(\\.([a-zA-Z0-9_]+))?$")
         chunk_file_re = re.compile("^chunks/([^/]+)$")
         for f in self.sm.get_listing():
             m = snapshot_file_re.search(f["name"])
@@ -79,6 +79,7 @@ class DbRebuild(chirribackup.actions.DbCreator.DbCreator):
                 snapshot_id = int(m.group(1))
                 snp = chirribackup.Snapshot.Snapshot(self.ldb)
                 snp.new(snapshot_id = snapshot_id)
+                snp.set_attribute("compression", m.group(3))
                 if snapshot_id > self.ldb.last_snapshot_id:
                     self.ldb.last_snapshot_id = snapshot_id
                 snp.set_status(-1, False)
@@ -111,8 +112,11 @@ class DbRebuild(chirribackup.actions.DbCreator.DbCreator):
     def status_1_download_snapshots(self):
         for snp in self.ldb.snapshot_list():
             if snp.status == -1:
-                data = self.sm.download_data("snapshots/snapshot-%d.txt" % snp.snapshot_id)
-                data = ChirriBackup.Crypto.unprotect_string(data)
+                data = self.sm.download_data("snapshots/%s" % snp.get_filename())
+                if snp.compression is not None:
+                    c = chirribackup.Compression.Decompressor(self.ldb.compression)
+                    data = c.decompress(data)
+                    data += c.close()
                 snp.desc_parse(data)
                 snp.set_status(5, False)
 

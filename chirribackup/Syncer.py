@@ -70,25 +70,31 @@ class Syncer(object):
 
             else:
                 if snp.status == 4:
-                    # snapshot prepared for upload
-                    #   => upload
-                    target_file = "snapshots/snapshot-%d.txt" % snp.snapshot_id
+                    # prepare snapshot for upload
                     snp.set_attribute("uploaded_tstamp", int(time.time()))
-                    desc = snp.desc()
-                    if self.ldb.compression is not None:
-                        c = chirribackup.Compression.Compressor(self.ldb.compression)
-                        zdesc = c.compress(desc)
-                        zdesc += c.close()
-                        if len(zdesc) < len(desc):
-                            snp.set_attribute("compression", self.ldb.compression)
-                            target_file += "." + self.ldb.compression
-                            desc = zdesc
-                    self.sm.upload_data(target_file, desc)
+                    desc = snp.desc_print()
+                    if snp.compression is None:
+                        if self.ldb.compression is not None:
+                            c = chirribackup.Compression.Compressor(self.ldb.compression)
+                            zdesc = c.compress(desc)
+                            zdesc += c.close()
+                            if len(zdesc) < len(desc):
+                                snp.set_attribute("compression", self.ldb.compression)
+                                desc = zdesc
+                    else:
+                        c = chirribackup.Compression.Compressor(snp.compression)
+                        desc = c.compress(desc)
+                        desc += c.close()
+
+                    # upload!
+                    self.sm.upload_data("snapshots/%s" % snp.get_filename(), desc)
                     snp.set_status(5)
+                    logger.info("[UPD] Snapshot %d" % snp.snapshot_id)
+
+                    # update counters
                     self.counters["bytes"]     += len(desc)
                     self.counters["snapshots"] += 1
                     self.counters["files"]     += 1
-                    logger.info("[UPD] Snapshot %d" % snp.snapshot_id)
 
             # commit on each operation
             self.ldb.connection.commit()

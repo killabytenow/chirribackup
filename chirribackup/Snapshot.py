@@ -569,7 +569,100 @@ class Snapshot(object):
             logger.error("Snapshot %d in unknown state %d." % (self.snapshot_id, self.status))
 
 
-    def desc(self, json = False):
+    def __desc_parse_json(self, desc):
+        try:
+            d = json.loads(desc)
+            if "format" not in d["details"]:
+                d["format"] = "json"
+        except ValueError, ex:
+            logger.debug("Cannot parse as JSON string: %s" % ex)
+            return None
+        return d
+
+
+    def __desc_parse_csv(self, desc):
+        d = {
+            "details": {},
+            "refs": [],
+        }
+
+        desc = desc.splitlines()
+        keyval_re = re.compile("^([^:\\s]+)\\s*:\\s*(.+?)\\s*$")
+
+        # read header
+        while len(desc) > 0:
+            l = desc.pop(0).strip()
+            m = keyval_re.match(l)
+            if m is not None:
+                d["details"][m.group(1)] = m.group(2)
+            elif l == "rows:":
+                # going to eat rows as cows
+                break
+            else:
+                logger.error("Cannot parse line '%s'." % l)
+                return None
+
+        if d["details"]["format"] != "csv":
+            logger.error("Unsupported format '%s'." % d["details"]["format"])
+            return None
+
+        if len(desc) == 0:
+            logger.warning("No refs found.")
+            return d
+
+        # read headers
+        headers = desc.pop(0).split(";")
+
+        # parse lines
+        while len(desc) > 0:
+            l = desc.pop(0).split(";")
+            r = {}
+            for i in range(0, len(headers)):
+                r[headers[i]] = l[i].decode("string_escape")
+            d["refs"].append(r)
+        return d
+
+            
+    def desc_parse(self, desc):
+        # unprotect
+        desc = chirribackup.Crypto.unprotect_string(desc)
+
+        # try with json decoder
+        d = self.__desc_parse_json(desc)
+
+        # try with CSV decoder
+        if d is None:
+            d = self.__desc_parse_csv(desc)
+
+        # if we cannot decode this throw an exception
+        if d is None:
+            raise BadSnapshotDescException("Cannot parse snapshot description")
+        
+        # check snapshot is in status < 0
+        if self.status >= 0:
+            raise BadSnapshotStatusException("Snapshot %s is in state %d." \
+                                                % (self.snapshot_id, self.status))
+        # process d structure
+        for a in [
+                    "started_tstamp",
+                    "finished_tstamp",
+                    "uploaded_tstamp",
+                 ]:
+            self.set_attribute(a, d["details"][a])
+        for fr in d["refs"]:
+            self.file_ref_save(
+                    fr["path"].encode('utf-8'),
+                    fr["hash"].encode('utf-8'),
+                    int(fr["size"]),
+                    int(fr["perm"]),
+                    int(fr["uid"]),
+                    int(fr["gid"]),
+                    int(fr["mtime"]),
+                    int(fr["status"]) if "status" in fr else 1)
+        self.set_status(5, False)
+
+
+    def desc_print(self, json = False):
         if self.status < 4:
             raise ChirriException("This snapshot cannot be described -- it is incomplete")
 
@@ -586,22 +679,23 @@ class Snapshot(object):
                         "refs" : self.refs(),
                     })
         else:
-            r = "format:          csv\n"                       \
-              + "snapshot:        %d\n" % self.snapshot_id     \
-              + "started_tstamp:  %d\n" % self.started_tstamp  \
-              + "finished_tstamp: %d\n" % self.finished_tstamp \
-              + "uploaded_tstamp: %d\n" % self.uploaded_tstamp \
-              + "rows:\n"                                      \
-              + "hash;size;perm;uid;gid;mtime;path\n"
+            r = "format:          csv\n"
+            r += "snapshot:        %d\n" % self.snapshot_id
+            r += "started_tstamp:  %d\n" % self.started_tstamp
+            r += "finished_tstamp: %d\n" % self.finished_tstamp
+            r += "uploaded_tstamp: %d\n" % self.uploaded_tstamp
+            r += "rows:\n"
+            r += "hash;size;perm;uid;gid;mtime;status;path\n"
             for ref in self.refs():
-                r += "%s;%d;%d;%d;%d;%d;%s\n" \
-                        % (ref["hash"],
-                           ref["size"],
-                           ref["perm"],
-                           ref["uid"],
-                           ref["gid"],
-                           ref["mtime"],
-                           ref["path"].encode("string_escape").replace(";", "\\x3b"))
+                r += "%s;%s;%s;%s;%s;%s;%s;%s\n" \
+                        % (str(ref["hash"]).encode("string_escape").replace(";", "\\x3b"),
+                           str(ref["size"]).encode("string_escape").replace(";", "\\x3b"),
+                           str(ref["perm"]).encode("string_escape").replace(";", "\\x3b"),
+                           str(ref["uid"]).encode("string_escape").replace(";", "\\x3b"),
+                           str(ref["gid"]).encode("string_escape").replace(";", "\\x3b"),
+                           str(ref["mtime"]).encode("string_escape").replace(";", "\\x3b"),
+                           str(ref["status"]).encode("string_escape").replace(";", "\\x3b"),
+                           str(ref["path"]).encode("string_escape").replace(";", "\\x3b"))
         return chirribackup.Crypto.protect_string(r)
 
 
@@ -638,6 +732,13 @@ class Snapshot(object):
 
         # commit -- such a status change is a good commit point
         self.ldb.connection.commit()
+
+
+    def get_filename(self):
+        f = "snapshot-%d.txt" % self.snapshot_id
+        if self.compression is not None:
+            f += "." + self.compression
+        return f
 
 
     def restore(self, sm, target_path, overwrite = False):
