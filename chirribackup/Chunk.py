@@ -26,16 +26,19 @@
 from __future__ import absolute_import
 
 from chirribackup.Logger import logger
-import chirribackup.Crypto
+from chirribackup.exceptions import \
+    ChirriException,                \
+    BadValueException,              \
+    ChunkBadFilenameException,      \
+    ChunkBadHashException,          \
+    ChunkNotFoundException
 import chirribackup.Compression
+import chirribackup.Crypto
 import exceptions
 import os
 import re
 
 # CONSTANTS
-from chirribackup.exceptions import ChirriException, BadValueException, ChunkBadFilenameException, ChunkBadHashException, \
-    ChunkNotFoundException
-
 READ_BLOCKSIZE = (1024*1024)
 
 # CHUNK CLASS
