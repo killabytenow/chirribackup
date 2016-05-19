@@ -1,9 +1,9 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 ###############################################################################
-# chirri
+# chirribackup/actions/Init.py
 #
-#   Chirri Backup main program
+#   Initialize database and initialize basic parameters
 #
 # -----------------------------------------------------------------------------
 # Chirri Backup - Cheap and ugly backup tool
@@ -23,22 +23,41 @@
 #   with this program. If not, see <http://www.gnu.org/licenses/>.
 # 
 ###############################################################################
-from chirribackup import ActionsManager
+
+from chirribackup.exceptions import ChirriException
 from chirribackup.Config import CONFIG
 from chirribackup.Logger import logger
+import chirribackup.actions.BaseAction
+import chirribackup.LocalDatabase
+import chirribackup.Snapshot
 import sys
 
-from chirribackup.exceptions import ActionInvocationException, ChirriException
+class SnapshotRun(chirribackup.actions.BaseAction.BaseAction):
 
-try:
-    ActionsManager.invoke(CONFIG.args)
+    help = {
+        "synopsis": "Starts or continues an interrupted snapshot",
+        "description": [
+            "This action starts a snapshot or continues an interrupted",
+            "snapshot.",
+        ],
+        "args": [
+            [ "{snapshot_id}",
+                "The snapshot_id of the snapshot selected."
+            ]
+        ]
+    }
+ 
 
-except ActionInvocationException, ex:
-    logger.error(ex.desc())
-    sys.exit(1)
+    def parse_args(self, argv):
+        return {
+            "snapshot_id": int(argv.pop(0)),
+        }
 
-except ChirriException, ex:
-    logger.critical(str(ex))
-    sys.exit(1)
 
-sys.exit(0)
+    def go(self, snapshot_id):
+        self.ldb = chirribackup.LocalDatabase.LocalDatabase(CONFIG.path)
+        chirribackup.Snapshot.Snapshot(self.ldb) \
+            .load(snapshot_id) \
+            .run()
+
+

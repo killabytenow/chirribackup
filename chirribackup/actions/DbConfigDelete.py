@@ -1,9 +1,9 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 ###############################################################################
-# chirri
+# chirribackup/actions/DbConfigDelete.py
 #
-#   Chirri Backup main program
+#   Delete stored config
 #
 # -----------------------------------------------------------------------------
 # Chirri Backup - Cheap and ugly backup tool
@@ -23,22 +23,41 @@
 #   with this program. If not, see <http://www.gnu.org/licenses/>.
 # 
 ###############################################################################
-from chirribackup import ActionsManager
+
 from chirribackup.Config import CONFIG
 from chirribackup.Logger import logger
+import chirribackup.actions.BaseAction
+import chirribackup.Crypto
+import chirribackup.Input
+import chirribackup.LocalDatabase
+import os
+import json
 import sys
 
-from chirribackup.exceptions import ActionInvocationException, ChirriException
 
-try:
-    ActionsManager.invoke(CONFIG.args)
+class DbConfigDelete(chirribackup.actions.BaseAction.BaseAction):
 
-except ActionInvocationException, ex:
-    logger.error(ex.desc())
-    sys.exit(1)
+    fix = 0
+    rebuild = 0
 
-except ChirriException, ex:
-    logger.critical(str(ex))
-    sys.exit(1)
+    help = {
+        "synopsis": "Delete an stored configuration",
+        "description": None,
+        "args": [
+            [ "config_id",
+                "Id of the stored config selected."
+            ]
+        ]
+    }
 
-sys.exit(0)
+
+    def parse_args(self, argv):
+        return {
+            "config_id" : argv.pop(0),
+        }
+
+    def go(self, config_id):
+        self.ldb = chirribackup.LocalDatabase.LocalDatabase(CONFIG.path)
+        c = self.ldb.config_delete(config_id)
+
+

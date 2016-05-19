@@ -1,9 +1,9 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 ###############################################################################
-# chirri
+# chirribackup/StringFormat.py
 #
-#   Chirri Backup main program
+#   Some string formatting helper subs
 #
 # -----------------------------------------------------------------------------
 # Chirri Backup - Cheap and ugly backup tool
@@ -23,22 +23,45 @@
 #   with this program. If not, see <http://www.gnu.org/licenses/>.
 # 
 ###############################################################################
-from chirribackup import ActionsManager
-from chirribackup.Config import CONFIG
-from chirribackup.Logger import logger
+
+import logging
+import logging.handlers
 import sys
+from struct import unpack
 
-from chirribackup.exceptions import ActionInvocationException, ChirriException
 
-try:
-    ActionsManager.invoke(CONFIG.args)
+def escape_string(s, escape_nl=True):
+    s = str(s)
+    r = []
+    for c in s:
+        x = ord(c)
+        if x < 32:
+            if not escape_nl and x == 10:
+                r.append(c)
+            else:
+                r.append("%" + format(x, "02x"))
+        else:
+            r.append(c)
 
-except ActionInvocationException, ex:
-    logger.error(ex.desc())
-    sys.exit(1)
+    return ''.join(r)
 
-except ChirriException, ex:
-    logger.critical(str(ex))
-    sys.exit(1)
 
-sys.exit(0)
+def IndentString(s, indent = "  ", indent_first_line = True):
+    s = str(s)
+
+    if indent == None or indent == "":
+        return s
+
+    r = ""
+    if indent_first_line: r = indent
+
+    i = 0
+    while i < len(s):
+        r = r + s[i]
+        x = unpack("B", s[i])
+        if x[0] == 10:
+            r = r + indent
+        i = i + 1
+
+    return r
+

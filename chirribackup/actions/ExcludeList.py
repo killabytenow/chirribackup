@@ -1,9 +1,9 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 ###############################################################################
-# chirri
+# chirribackup/actions/ExcludeList.py
 #
-#   Chirri Backup main program
+#   List exclude rules
 #
 # -----------------------------------------------------------------------------
 # Chirri Backup - Cheap and ugly backup tool
@@ -23,22 +23,41 @@
 #   with this program. If not, see <http://www.gnu.org/licenses/>.
 # 
 ###############################################################################
-from chirribackup import ActionsManager
+
+from chirribackup.exceptions import ChirriException
 from chirribackup.Config import CONFIG
 from chirribackup.Logger import logger
+import chirribackup.actions.BaseAction
+import chirribackup.Exclude
+import chirribackup.LocalDatabase
+import os
 import sys
 
-from chirribackup.exceptions import ActionInvocationException, ChirriException
+class ExcludeList(chirribackup.actions.BaseAction.BaseAction):
 
-try:
-    ActionsManager.invoke(CONFIG.args)
+    fix = 0
+    rebuild = 0
 
-except ActionInvocationException, ex:
-    logger.error(ex.desc())
-    sys.exit(1)
+    help = {
+        "synopsis": "List exclude rules",
+        "description": None,
+        "args": None,
+    }
+ 
 
-except ChirriException, ex:
-    logger.critical(str(ex))
-    sys.exit(1)
+    def parse_args(self, argv):
+        return {}
 
-sys.exit(0)
+
+    def go(self):
+        self.ldb = chirribackup.LocalDatabase.LocalDatabase(CONFIG.path)
+        print "id   disabled type     ignore_case expression"
+        print "---- -------- -------- ----------- --------------------------------------------------"
+        for x in chirribackup.Exclude.Exclude.list(self.ldb):
+            print "%4d %-8s %-8s %-11s %s" \
+                % (x.exclude_id,
+                   "disabled" if x.disabled != 0 else "",
+                   x.expr_type,
+                   "yes" if x.ignore_case != 0 else "no",
+                   x.exclude)
+

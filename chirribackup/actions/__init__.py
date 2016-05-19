@@ -1,9 +1,13 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 ###############################################################################
-# chirri
+# ChirriBackup/actions/__init__.py
 #
-#   Chirri Backup main program
+#   I don't WTF is this f*cking file. The only thing I know is that if it
+#   does not exists this fucking project doesn't work.
+#   Hate python
+#     bit more
+#       every day.
 #
 # -----------------------------------------------------------------------------
 # Chirri Backup - Cheap and ugly backup tool
@@ -23,22 +27,6 @@
 #   with this program. If not, see <http://www.gnu.org/licenses/>.
 # 
 ###############################################################################
-from chirribackup import ActionsManager
-from chirribackup.Config import CONFIG
-from chirribackup.Logger import logger
-import sys
 
-from chirribackup.exceptions import ActionInvocationException, ChirriException
+dirname = __path__[0]        # Package's main folder
 
-try:
-    ActionsManager.invoke(CONFIG.args)
-
-except ActionInvocationException, ex:
-    logger.error(ex.desc())
-    sys.exit(1)
-
-except ChirriException, ex:
-    logger.critical(str(ex))
-    sys.exit(1)
-
-sys.exit(0)

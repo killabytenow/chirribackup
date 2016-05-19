@@ -1,9 +1,9 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 ###############################################################################
-# chirri
+# chirribackup/actions/DbAttributeGet.py
 #
-#   Chirri Backup main program
+#   Get a db parameter
 #
 # -----------------------------------------------------------------------------
 # Chirri Backup - Cheap and ugly backup tool
@@ -23,22 +23,43 @@
 #   with this program. If not, see <http://www.gnu.org/licenses/>.
 # 
 ###############################################################################
-from chirribackup import ActionsManager
+
 from chirribackup.Config import CONFIG
 from chirribackup.Logger import logger
+import chirribackup.actions.BaseAction
+import chirribackup.LocalDatabase
+import os
+import json
 import sys
 
-from chirribackup.exceptions import ActionInvocationException, ChirriException
 
-try:
-    ActionsManager.invoke(CONFIG.args)
+class DbAttributeGet(chirribackup.actions.BaseAction.BaseAction):
 
-except ActionInvocationException, ex:
-    logger.error(ex.desc())
-    sys.exit(1)
+    fix = 0
+    rebuild = 0
 
-except ChirriException, ex:
-    logger.critical(str(ex))
-    sys.exit(1)
+    help = {
+        "synopsis": "Get a db parameter",
+        "description": [
+            "This command allows to get the value of a database attribute.",
+        ],
+        "args": [
+            [ "{config_key}",
+                "Configuration key: the name of the parameter.",
+            ],
+        ]
+    }
 
-sys.exit(0)
+
+    def parse_args(self, argv):
+        return {
+            "key": argv.pop(0),
+        }
+
+
+    def go(self, key):
+        self.ldb = chirribackup.LocalDatabase.LocalDatabase(CONFIG.path)
+
+        print self.ldb.config_attrib_get(key)
+
+
