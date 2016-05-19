@@ -76,9 +76,8 @@ class DbCreator(chirribackup.actions.BaseAction.BaseAction):
 
         # copy default config of storage manager
         for sk,v in sm.storage_status_keys.items():
-            if sk in config:
-                raise ChirriException("storage key '%s' already exists in basic status_keys." % sk)
-            config[sk] = str(v["value"]) if v["value"] is not None else None
+            if sk not in config:
+                config[sk] = str(v["value"]) if v["value"] is not None else None
 
         # configure storage module
         sm_title = "Backend '%s' configuration" % sm.name
