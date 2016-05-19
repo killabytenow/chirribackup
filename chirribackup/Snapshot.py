@@ -574,6 +574,8 @@ class Snapshot(object):
             d = json.loads(desc)
             if "format" not in d["details"]:
                 d["format"] = "json"
+            if "default" not in d:
+                d["default"] = {}
         except ValueError, ex:
             logger.debug("Cannot parse as JSON string: %s" % ex)
             return None
@@ -583,18 +585,26 @@ class Snapshot(object):
     def __desc_parse_csv(self, desc):
         d = {
             "details": {},
+            "default": {},
             "refs": [],
         }
 
         desc = desc.splitlines()
         keyval_re = re.compile("^([^:\\s]+)\\s*:\\s*(.+?)\\s*$")
+        defkey_re = re.compile("^default\\.(.+)$")
 
         # read header
         while len(desc) > 0:
             l = desc.pop(0).strip()
             m = keyval_re.match(l)
             if m is not None:
-                d["details"][m.group(1)] = m.group(2)
+                k = m.group(1)
+                v = m.group(2)
+                m = defkey_re.match(k)
+                if m is not None:
+                    d["default"][m.group(1)] = v
+                else:
+                    d["details"][k] = v
             elif l == "rows:":
                 # going to eat rows as cows
                 break
@@ -618,7 +628,8 @@ class Snapshot(object):
             l = desc.pop(0).split(";")
             r = {}
             for i in range(0, len(headers)):
-                r[headers[i]] = l[i].decode("string_escape")
+                if l[i] != "":
+                    r[headers[i]] = l[i].decode("string_escape")
             d["refs"].append(r)
         return d
 
@@ -642,6 +653,19 @@ class Snapshot(object):
         if self.status >= 0:
             raise BadSnapshotStatusException("Snapshot %s is in state %d." \
                                                 % (self.snapshot_id, self.status))
+        # uncompress file refs
+        for r in d["refs"]:
+            for f,dv in d["default"].iteritems():
+                if f not in r:
+                    #logger.warning("adding %s(%s) in %s" % (f,dv,r))
+                    r[f] = dv
+        return d
+
+
+    def desc_load(self, desc):
+        # parse snapshot data
+        d = self.desc_parse(desc)
+
         # process d structure
         for a in [
                     "started_tstamp",
@@ -662,13 +686,52 @@ class Snapshot(object):
         self.set_status(5, False)
 
 
-    def desc_print(self, json = False):
+    def desc_print(self, json_output = False):
         if self.status < 4:
             raise ChirriException("This snapshot cannot be described -- it is incomplete")
 
-        r = None
-        if json:
-            r = json.dumps(
+        # fetch all refs
+        refs = self.refs()
+
+        # search most common values (space optimization)
+        mc = {
+            "hash":   {},
+            "size":   {},
+            "perm":   {},
+            "uid":    {},
+            "gid":    {},
+            "mtime":  {},
+            "status": {},
+        }
+        for r in refs:
+            for f,vc in mc.iteritems():
+                if r[f] not in vc:
+                    vc[r[f]] = 1
+                else:
+                    vc[r[f]] += 1
+        for f in mc.keys():
+            mv = None
+            for v,c in mc[f].iteritems():
+                if mv is None or mc[f][mv] < mc[f][v]:
+                    mv = v
+            if mv is None:
+                del mc[f]
+            else:
+                if mc[f][mv] > 5:
+                    mc[f] = mv
+                else:
+                    logger.warning("Cannot compress '%s' -- only used %d times." % (f, mc[f][mv]))
+                    del mc[f]
+
+        # remove most common values from references
+        for r in refs:
+            for f in mc.iterkeys():
+                if r[f] == mc[f]:
+                    del r[f]
+
+        d = None
+        if json_output:
+            d = json.dumps(
                     {
                         "details" : {
                             "snapshot"        : self.snapshot_id,
@@ -676,27 +739,30 @@ class Snapshot(object):
                             "finished_tstamp" : self.finished_tstamp,
                             "uploaded_tstamp" : self.uploaded_tstamp,
                         },
-                        "refs" : self.refs(),
+                        "default" : mc,
+                        "refs" : refs,
                     })
         else:
-            r = "format:          csv\n"
-            r += "snapshot:        %d\n" % self.snapshot_id
-            r += "started_tstamp:  %d\n" % self.started_tstamp
-            r += "finished_tstamp: %d\n" % self.finished_tstamp
-            r += "uploaded_tstamp: %d\n" % self.uploaded_tstamp
-            r += "rows:\n"
-            r += "hash;size;perm;uid;gid;mtime;status;path\n"
-            for ref in self.refs():
-                r += "%s;%s;%s;%s;%s;%s;%s;%s\n" \
-                        % (str(ref["hash"]).encode("string_escape").replace(";", "\\x3b"),
-                           str(ref["size"]).encode("string_escape").replace(";", "\\x3b"),
-                           str(ref["perm"]).encode("string_escape").replace(";", "\\x3b"),
-                           str(ref["uid"]).encode("string_escape").replace(";", "\\x3b"),
-                           str(ref["gid"]).encode("string_escape").replace(";", "\\x3b"),
-                           str(ref["mtime"]).encode("string_escape").replace(";", "\\x3b"),
-                           str(ref["status"]).encode("string_escape").replace(";", "\\x3b"),
-                           str(ref["path"]).encode("string_escape").replace(";", "\\x3b"))
-        return chirribackup.Crypto.protect_string(r)
+            d = "format:          csv\n"
+            d += "snapshot:        %s\n" % self.snapshot_id
+            d += "started_tstamp:  %s\n" % self.started_tstamp
+            d += "finished_tstamp: %s\n" % self.finished_tstamp
+            d += "uploaded_tstamp: %s\n" % self.uploaded_tstamp
+            for f,v in mc.iteritems():
+                d += "default.%s: %s\n" % (f, v)
+            d += "rows:\n"
+            d += "hash;size;perm;uid;gid;mtime;status;path\n"
+            for ref in refs:
+                d += "%s;%s;%s;%s;%s;%s;%s;%s\n" \
+                        % (str(ref["hash"]).encode("string_escape").replace(";", "\\x3b") if "hash" in ref else "",
+                           str(ref["size"]).encode("string_escape").replace(";", "\\x3b") if "size" in ref else "",
+                           str(ref["perm"]).encode("string_escape").replace(";", "\\x3b") if "perm" in ref else "",
+                           str(ref["uid"]).encode("string_escape").replace(";", "\\x3b") if "uid" in ref else "",
+                           str(ref["gid"]).encode("string_escape").replace(";", "\\x3b") if "gid" in ref else "",
+                           str(ref["mtime"]).encode("string_escape").replace(";", "\\x3b") if "mtime" in ref else "",
+                           str(ref["status"]).encode("string_escape").replace(";", "\\x3b") if "status" in ref else "",
+                           str(ref["path"]).encode("string_escape").replace(";", "\\x3b") if "path" in ref else "")
+        return chirribackup.Crypto.protect_string(d)
 
 
     def destroy(self):

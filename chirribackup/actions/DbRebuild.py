@@ -117,7 +117,7 @@ class DbRebuild(chirribackup.actions.DbCreator.DbCreator):
                     c = chirribackup.Compression.Decompressor(self.ldb.compression)
                     data = c.decompress(data)
                     data += c.close()
-                snp.desc_parse(data)
+                snp.desc_load(data)
                 snp.set_status(5, False)
 
         # commit -- now it is a good commit point
