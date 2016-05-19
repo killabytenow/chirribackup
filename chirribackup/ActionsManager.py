@@ -61,7 +61,7 @@ action_handlers = {
         },
         "help"         : "Help",
         "snapshot" : {
-            "json"     : "SnapshotJson",
+            "print"    : "SnapshotPrint",
             "delete"   : "SnapshotDelete",
             "details"  : "SnapshotDetails",
             "diff"     : "SnapshotDiff",

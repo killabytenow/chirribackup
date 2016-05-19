@@ -686,7 +686,7 @@ class Snapshot(object):
         self.set_status(5, False)
 
 
-    def desc_print(self, json_output = False):
+    def desc_print(self, output_format = "txt"):
         if self.status < 4:
             raise ChirriException("This snapshot cannot be described -- it is incomplete")
 
@@ -730,7 +730,7 @@ class Snapshot(object):
                     del r[f]
 
         d = None
-        if json_output:
+        if output_format == "json":
             d = json.dumps(
                     {
                         "details" : {
@@ -742,7 +742,8 @@ class Snapshot(object):
                         "default" : mc,
                         "refs" : refs,
                     })
-        else:
+
+        elif output_format == "txt":
             d = "format:          csv\n"
             d += "snapshot:        %s\n" % self.snapshot_id
             d += "started_tstamp:  %s\n" % self.started_tstamp
@@ -762,6 +763,10 @@ class Snapshot(object):
                            str(ref["mtime"]).encode("string_escape").replace(";", "\\x3b") if "mtime" in ref else "",
                            str(ref["status"]).encode("string_escape").replace(";", "\\x3b") if "status" in ref else "",
                            str(ref["path"]).encode("string_escape").replace(";", "\\x3b") if "path" in ref else "")
+
+        else:
+            raise ChirriException("Unknown output format '%s'." % output_format)
+
         return chirribackup.Crypto.protect_string(d)
 
 
