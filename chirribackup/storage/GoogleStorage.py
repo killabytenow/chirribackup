@@ -160,7 +160,7 @@ class GoogleStorage(chirribackup.storage.BaseStorage.BaseStorage):
         done = False
         while done is False:
             status, done = downloader.next_chunk()
-            logger.info("%s: Download {}%.".format(remote_file, int(status.progress() * 100)))
+            logger.info("%s: Download %.2f." % (remote_file, int(status.progress() * 100)))
 
 
     def download_file(self, remote_file, local_path):
