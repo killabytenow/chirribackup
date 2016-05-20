@@ -26,7 +26,7 @@
 
 from chirribackup.exceptions import ChirriException
 from chirribackup.Logger import logger
-import chirribackup.Chunk
+import chirribackup.chunk
 import chirribackup.Crypto
 import fnmatch
 import json
@@ -287,7 +287,7 @@ class Snapshot(object):
 
         # update refcount
         if hash_or_type is not None and self.file_ref_type(hash_or_type) == "regfile":
-            chunk = chirribackup.Chunk.Chunk(self.ldb, hash_or_type)
+            chunk = chirribackup.chunk.Chunk(self.ldb, hash_or_type)
             chunk.refcount_inc()
 
 
@@ -425,7 +425,7 @@ class Snapshot(object):
                         "path"     : fr["path"]
                     })
                 if fr["hash"] is not None and fr["hash"] != "":
-                    chunk = chirribackup.Chunk.Chunk(self.ldb, fr["hash"])
+                    chunk = chirribackup.chunk.Chunk(self.ldb, fr["hash"])
                     chunk.refcount_dec()
 
 
@@ -444,7 +444,7 @@ class Snapshot(object):
 
             if fr_type == "regfile" and fr["hash"] is None:
                 # do snapshot and calc hash
-                c = chirribackup.Chunk.Chunk(self.ldb)
+                c = chirribackup.chunk.Chunk(self.ldb)
                 try:
                     logger.info("snapshot of '%s'" % fr["path"])
                     c.new(fr["path"], self.ldb.compression)
@@ -781,7 +781,7 @@ class Snapshot(object):
             # (if hash is None or symlink/dir doesn't matter)
             fr_type = self.file_ref_type(fr["hash"])
             if fr_type == "regfile" and fr["hash"] is not None:
-                chunk = chirribackup.Chunk.Chunk(self.ldb, fr["hash"])
+                chunk = chirribackup.chunk.Chunk(self.ldb, fr["hash"])
                 chunk.refcount_dec()
 
         # delete snapshot's related file_ref
@@ -887,7 +887,7 @@ class Snapshot(object):
         for h, ref_list in dl.items():
             # download needed chunk
             target_chunk = os.path.join(target_path, ".%s.tmp" % h)
-            c = chirribackup.Chunk.Chunk(self.ldb, h)
+            c = chirribackup.chunk.Chunk(self.ldb, h)
             c.download(sm, target_chunk)
 
             # once downloaded the needed chunk, we use it for restoring the

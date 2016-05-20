@@ -30,10 +30,11 @@ import time
 
 import chirribackup.Crypto
 import chirribackup.LocalDatabase
-import chirribackup.snapshot
 import chirribackup.actions.DbCreator
 import chirribackup.actions.SnapshotList
+import chirribackup.chunk
 import chirribackup.compression
+import chirribackup.snapshot
 from chirribackup.Config import CONFIG
 from chirribackup.Logger import logger
 from chirribackup.exceptions import ChunkBadFilenameException, ChirriException, BadParameterException
@@ -91,8 +92,8 @@ class DbRebuild(chirribackup.actions.DbCreator.DbCreator):
                 continue
 
             try:
-                cbi = chirribackup.Chunk.Chunk.parse_filename(m.group(1))
-                c = chirribackup.Chunk.Chunk.insert(
+                cbi = chirribackup.chunk.Chunk.parse_filename(m.group(1))
+                c = chirribackup.chunk.Chunk.insert(
                                 self.ldb,
                                 cbi["hash"],        # hash
                                 cbi["size"],        # size

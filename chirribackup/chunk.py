@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 ###############################################################################
-# chirribackup/Chunk.py
+# chirribackup/chunk.py
 #
 #   Represents a chunk (in disk and database)
 #

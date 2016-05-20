@@ -28,6 +28,7 @@ import os
 import time
 import traceback
 
+import chirribackup.chunk
 import chirribackup.compression
 import chirribackup.snapshot
 from chirribackup.Logger import logger
@@ -104,7 +105,7 @@ class Syncer(object):
 
     def sync_chunks(self):
         logger.info("Syncing chunks")
-        for chunk in chirribackup.Chunk.Chunk.list(self.ldb):
+        for chunk in chirribackup.chunk.Chunk.list(self.ldb):
             local_chunk = os.path.realpath(os.path.join(self.ldb.chunks_dir, chunk.get_filename()))
             remote_chunk = "chunks/%s" % chunk.get_filename()
 
@@ -145,8 +146,8 @@ class Syncer(object):
         # delete forgotten chunks in disk
         for fname in os.listdir(os.path.realpath(self.ldb.chunks_dir)):
             try:
-                cbi = chirribackup.Chunk.Chunk.parse_filename(fname)
-                c = chirribackup.Chunk.Chunk(self.ldb, cbi["hash"])
+                cbi = chirribackup.chunk.Chunk.parse_filename(fname)
+                c = chirribackup.chunk.Chunk(self.ldb, cbi["hash"])
 
                 if c.status == 1:
                     # this local chunk should not exist

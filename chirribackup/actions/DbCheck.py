@@ -24,17 +24,17 @@
 # 
 ###############################################################################
 
-from chirribackup.Config import CONFIG
-from chirribackup.Logger import logger
-import chirribackup.actions.BaseAction
+import os
+import re
+
+import chirribackup.chunk
 import chirribackup.Crypto
 import chirribackup.Input
 import chirribackup.LocalDatabase
+import chirribackup.actions.BaseAction
 import chirribackup.compression
-import os
-import re
-import sys
-
+from chirribackup.Config import CONFIG
+from chirribackup.Logger import logger
 from chirribackup.exceptions import ChirriException, ChunkBadFilenameException, ChunkNotFoundException, \
     BadParameterException
 
@@ -96,7 +96,7 @@ class DbCheck(chirribackup.actions.BaseAction.BaseAction):
 
     def check_chunks(self):
         logger.info("Checking chunks...")
-        for chunk in chirribackup.Chunk.Chunk.list(self.ldb):
+        for chunk in chirribackup.chunk.Chunk.list(self.ldb):
             bad_chunk = False
 
             # 1. check hash id
@@ -173,10 +173,10 @@ class DbCheck(chirribackup.actions.BaseAction.BaseAction):
         for fname in os.listdir(os.path.realpath(self.ldb.chunks_dir)):
             try:
                 # 1.1 Good file name
-                cbi = chirribackup.Chunk.Chunk.parse_filename(fname)
+                cbi = chirribackup.chunk.Chunk.parse_filename(fname)
 
                 # 1.2 chunk not only exists in disk
-                chunk = chirribackup.Chunk.Chunk(self.ldb, cbi["hash"])
+                chunk = chirribackup.chunk.Chunk(self.ldb, cbi["hash"])
 
                 # 1.3 basic information (cbi) matches with chunk info
                 if chunk.size != cbi["size"] \
@@ -228,7 +228,7 @@ class DbCheck(chirribackup.actions.BaseAction.BaseAction):
                     os.unlink(fpath)
 
         # 2. check that pending chunks are in disk
-        for chunk in chirribackup.Chunk.Chunk.list(self.ldb, status = 0):
+        for chunk in chirribackup.chunk.Chunk.list(self.ldb, status = 0):
             fpath = os.path.realpath(os.path.join(self.ldb.chunks_dir, chunk.get_filename()))
             if not os.path.exists(fpath):
                 logger.error("Not uploaded chunk %s referenced, but not found in __chunks__" \
