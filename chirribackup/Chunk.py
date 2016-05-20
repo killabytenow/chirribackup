@@ -32,7 +32,7 @@ from chirribackup.exceptions import \
     ChunkBadFilenameException,      \
     ChunkBadHashException,          \
     ChunkNotFoundException
-import chirribackup.Compression
+import chirribackup.compression
 import chirribackup.Crypto
 import exceptions
 import os
@@ -83,7 +83,7 @@ class Chunk(object):
         tmp_file = os.path.join(self.ldb.chunks_dir, "tmp.%s" % os.getpid())
 
         # create snapshot (while hashing and compressing)
-        compressor = chirribackup.Compression.Compressor(compression, tmp_file)
+        compressor = chirribackup.compression.Compressor(compression, tmp_file)
         sh = chirribackup.Crypto.ChirriHasher()
         try:
             with open(local_file, 'rb') as ifile:
@@ -144,7 +144,7 @@ class Chunk(object):
         if os.path.exists(target_file):
             try:
                 # hash found file
-                decompressor = chirribackup.Compression.Decompressor(compression)
+                decompressor = chirribackup.compression.Decompressor(compression)
                 eh = chirribackup.Crypto.ChirriHasher()
                 with open(target_file, 'rb') as ifile:
                     buf = ifile.read(READ_BLOCKSIZE)
@@ -221,7 +221,7 @@ class Chunk(object):
             os.rename(tmp_file, target_file)
         else:
             try:
-                decompressor = chirribackup.Compression.Decompressor(self.compression, target_file)
+                decompressor = chirribackup.compression.Decompressor(self.compression, target_file)
                 sh = chirribackup.Crypto.ChirriHasher()
                 with open(tmp_file, 'rb') as ifile:
                     buf = ifile.read(READ_BLOCKSIZE)

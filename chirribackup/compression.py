@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 ###############################################################################
-# chirribackup/Compression.py
+# chirribackup/compression.py
 #
 #   Helper compression funcs
 #

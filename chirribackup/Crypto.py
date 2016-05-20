@@ -25,7 +25,7 @@
 ###############################################################################
 
 from chirribackup.exceptions import ChirriException
-import chirribackup.Compression
+import chirribackup.compression
 import hashlib
 import os
 import re
@@ -72,7 +72,7 @@ class ChirriHasher:
     @classmethod
     def hash_file(cls, path, decompressor = None):
         if decompressor is None:
-            decompressor = chirribackup.Compression.Decompressor(None)
+            decompressor = chirribackup.compression.Decompressor(None)
         h = ChirriHasher()
         with open(path, 'rb') as afile:
             buf = afile.read(READ_BLOCKSIZE)

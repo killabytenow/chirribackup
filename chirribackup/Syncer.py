@@ -23,14 +23,15 @@
 #   with this program. If not, see <http://www.gnu.org/licenses/>.
 # 
 ###############################################################################
-import traceback
-
-from chirribackup.exceptions import ChirriException, ChunkNotFoundException, ChunkBadFilenameException
-from chirribackup.Logger import logger
-import chirribackup.Snapshot
 import json
 import os
 import time
+import traceback
+
+import chirribackup.Snapshot
+import chirribackup.compression
+from chirribackup.Logger import logger
+from chirribackup.exceptions import ChirriException, ChunkNotFoundException, ChunkBadFilenameException
 
 class Syncer(object):
 
@@ -75,14 +76,14 @@ class Syncer(object):
                     desc = snp.desc_print()
                     if snp.compression is None:
                         if self.ldb.compression is not None:
-                            c = chirribackup.Compression.Compressor(self.ldb.compression)
+                            c = chirribackup.compression.Compressor(self.ldb.compression)
                             zdesc = c.compress(desc)
                             zdesc += c.close()
                             if len(zdesc) < len(desc):
                                 snp.set_attribute("compression", self.ldb.compression)
                                 desc = zdesc
                     else:
-                        c = chirribackup.Compression.Compressor(snp.compression)
+                        c = chirribackup.compression.Compressor(snp.compression)
                         desc = c.compress(desc)
                         desc += c.close()
 

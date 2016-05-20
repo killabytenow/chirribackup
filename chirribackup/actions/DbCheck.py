@@ -30,6 +30,7 @@ import chirribackup.actions.BaseAction
 import chirribackup.Crypto
 import chirribackup.Input
 import chirribackup.LocalDatabase
+import chirribackup.compression
 import os
 import re
 import sys
@@ -193,7 +194,7 @@ class DbCheck(chirribackup.actions.BaseAction.BaseAction):
                 try:
                     h = chirribackup.Crypto.ChirriHasher.hash_file(
                                 fpath,
-                                chirribackup.Compression.Decompressor(chunk.compression))
+                                chirribackup.compression.Decompressor(chunk.compression))
 
                     # 1.5 chunk not uploaded, but corrupted
                     if h.nbytes != chunk.size or h.hash != chunk.hash:

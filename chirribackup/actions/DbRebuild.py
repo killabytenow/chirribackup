@@ -24,18 +24,18 @@
 # 
 ###############################################################################
 
-from chirribackup.Config import CONFIG
-from chirribackup.Logger import logger
-import chirribackup.actions.DbCreator
-import chirribackup.LocalDatabase
-import chirribackup.actions.SnapshotList
-import chirribackup.Snapshot
-import chirribackup.Crypto
-import json
 import re
 import sys
 import time
 
+import chirribackup.Crypto
+import chirribackup.LocalDatabase
+import chirribackup.Snapshot
+import chirribackup.actions.DbCreator
+import chirribackup.actions.SnapshotList
+import chirribackup.compression
+from chirribackup.Config import CONFIG
+from chirribackup.Logger import logger
 from chirribackup.exceptions import ChunkBadFilenameException, ChirriException, BadParameterException
 
 
@@ -114,7 +114,7 @@ class DbRebuild(chirribackup.actions.DbCreator.DbCreator):
             if snp.status == -1:
                 data = self.sm.download_data("snapshots/%s" % snp.get_filename())
                 if snp.compression is not None:
-                    c = chirribackup.Compression.Decompressor(self.ldb.compression)
+                    c = chirribackup.compression.Decompressor(self.ldb.compression)
                     data = c.decompress(data)
                     data += c.close()
                 snp.desc_load(data)
