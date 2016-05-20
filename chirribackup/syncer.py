@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 ###############################################################################
-# chirribackup/Syncer.py
+# chirribackup/syncer.py
 #
 #   Syncs database and uploads&delete chunks and snapshots
 #
@@ -28,10 +28,11 @@ import os
 import time
 import traceback
 
-import chirribackup.snapshot
 import chirribackup.compression
+import chirribackup.snapshot
 from chirribackup.Logger import logger
 from chirribackup.exceptions import ChirriException, ChunkNotFoundException, ChunkBadFilenameException
+
 
 class Syncer(object):
 

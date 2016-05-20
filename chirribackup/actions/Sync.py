@@ -29,7 +29,7 @@ from chirribackup.Config import CONFIG
 from chirribackup.Logger import logger
 import chirribackup.actions.BaseAction
 import chirribackup.LocalDatabase
-import chirribackup.Syncer
+import chirribackup.syncer
 import sys
 
 class Sync(chirribackup.actions.BaseAction.BaseAction):
@@ -47,7 +47,7 @@ class Sync(chirribackup.actions.BaseAction.BaseAction):
 
     def go(self):
         self.ldb = chirribackup.LocalDatabase.LocalDatabase(CONFIG.path)
-        syncer = chirribackup.Syncer.Syncer(self.ldb)
+        syncer = chirribackup.syncer.Syncer(self.ldb)
         syncer.run()
         print "Finished succesfully:"
         print "  - Uploaded %d snapshots" % syncer.counters["snapshots"]
