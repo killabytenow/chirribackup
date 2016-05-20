@@ -29,7 +29,7 @@ from chirribackup.Config import CONFIG
 from chirribackup.Logger import logger
 import chirribackup.actions.BaseAction
 import chirribackup.LocalDatabase
-import chirribackup.Snapshot
+import chirribackup.snapshot
 import sys
 
 class SnapshotRestore(chirribackup.actions.BaseAction.BaseAction):
@@ -69,7 +69,7 @@ class SnapshotRestore(chirribackup.actions.BaseAction.BaseAction):
 
     def go(self, snapshot_id, target_dir, overwrite = False):
         self.ldb = chirribackup.LocalDatabase.LocalDatabase(CONFIG.path)
-        chirribackup.Snapshot.Snapshot(self.ldb) \
+        chirribackup.snapshot.Snapshot(self.ldb) \
                 .load(snapshot_id) \
                 .restore(self.ldb.get_storage_manager(), target_dir, overwrite)
 

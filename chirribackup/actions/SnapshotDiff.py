@@ -29,7 +29,7 @@ from chirribackup.Config import CONFIG
 from chirribackup.Logger import logger
 import chirribackup.actions.BaseAction
 import chirribackup.LocalDatabase
-import chirribackup.Snapshot
+import chirribackup.snapshot
 import sys
 import time
 
@@ -73,8 +73,8 @@ class SnapshotDiff(chirribackup.actions.BaseAction.BaseAction):
         self.ldb = chirribackup.LocalDatabase.LocalDatabase(CONFIG.path)
 
         # load snapshots
-        a = chirribackup.Snapshot.Snapshot(self.ldb).load(snapshot_a_id)
-        b = chirribackup.Snapshot.Snapshot(self.ldb).load(snapshot_b_id)
+        a = chirribackup.snapshot.Snapshot(self.ldb).load(snapshot_a_id)
+        b = chirribackup.snapshot.Snapshot(self.ldb).load(snapshot_b_id)
 
         if a.status < 4:
             raise ChirriException("Snapshot A is not finished. At least status 4 is needed.")

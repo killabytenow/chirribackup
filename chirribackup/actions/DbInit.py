@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 ###############################################################################
-# chirribackup/actions/Snapshot.py
+# chirribackup/actions/snapshot.py
 #
 #   Create an snapshot and prepare it for uploading.
 #

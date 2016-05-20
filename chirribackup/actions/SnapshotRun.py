@@ -29,7 +29,7 @@ from chirribackup.Config import CONFIG
 from chirribackup.Logger import logger
 import chirribackup.actions.BaseAction
 import chirribackup.LocalDatabase
-import chirribackup.Snapshot
+import chirribackup.snapshot
 import sys
 
 class SnapshotRun(chirribackup.actions.BaseAction.BaseAction):
@@ -56,7 +56,7 @@ class SnapshotRun(chirribackup.actions.BaseAction.BaseAction):
 
     def go(self, snapshot_id):
         self.ldb = chirribackup.LocalDatabase.LocalDatabase(CONFIG.path)
-        chirribackup.Snapshot.Snapshot(self.ldb) \
+        chirribackup.snapshot.Snapshot(self.ldb) \
             .load(snapshot_id) \
             .run()
 

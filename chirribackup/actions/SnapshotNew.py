@@ -29,7 +29,7 @@ from chirribackup.Config import CONFIG
 from chirribackup.Logger import logger
 import chirribackup.actions.BaseAction
 import chirribackup.LocalDatabase
-import chirribackup.Snapshot
+import chirribackup.snapshot
 import chirribackup.Input
 import sys
 import re
@@ -64,7 +64,7 @@ class SnapshotNew(chirribackup.actions.BaseAction.BaseAction):
         else:
             logger.info("Creating new snapshot from scratch")
 
-        snp = chirribackup.Snapshot.Snapshot(self.ldb)
+        snp = chirribackup.snapshot.Snapshot(self.ldb)
         snp.new(base_snapshot_id)
         snp.run()
 

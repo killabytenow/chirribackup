@@ -28,7 +28,7 @@
 
 from chirribackup.Logger import logger
 import chirribackup.storage.BaseStorage
-import chirribackup.Snapshot
+import chirribackup.snapshot
 import json
 import os
 import time
@@ -276,7 +276,7 @@ class LocalDatabase(object):
     def snapshot_list(self):
         slist = []
         for row in self.connection.execute("SELECT snapshot FROM snapshots"):
-            slist.append(chirribackup.Snapshot.Snapshot(self).load(row["snapshot"]))
+            slist.append(chirribackup.snapshot.Snapshot(self).load(row["snapshot"]))
         return slist
 
 

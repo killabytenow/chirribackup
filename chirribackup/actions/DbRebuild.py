@@ -30,7 +30,7 @@ import time
 
 import chirribackup.Crypto
 import chirribackup.LocalDatabase
-import chirribackup.Snapshot
+import chirribackup.snapshot
 import chirribackup.actions.DbCreator
 import chirribackup.actions.SnapshotList
 import chirribackup.compression
@@ -77,7 +77,7 @@ class DbRebuild(chirribackup.actions.DbCreator.DbCreator):
             m = snapshot_file_re.search(f["name"])
             if m is not None:
                 snapshot_id = int(m.group(1))
-                snp = chirribackup.Snapshot.Snapshot(self.ldb)
+                snp = chirribackup.snapshot.Snapshot(self.ldb)
                 snp.new(snapshot_id = snapshot_id)
                 snp.set_attribute("compression", m.group(3))
                 if snapshot_id > self.ldb.last_snapshot_id:
@@ -172,7 +172,7 @@ class DbRebuild(chirribackup.actions.DbCreator.DbCreator):
     def status_3_restore_files(self):
         # restore snapshot
         if self.ldb.rebuild_snapshot is not None:
-            snp = chirribackup.Snapshot.Snapshot(self.ldb)
+            snp = chirribackup.snapshot.Snapshot(self.ldb)
             snp.load(self.ldb.last_snapshot_id)
             snp.restore(self.sm, self.ldb.db_path, True)
 

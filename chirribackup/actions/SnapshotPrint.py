@@ -28,7 +28,7 @@ from chirribackup.Config import CONFIG
 from chirribackup.Logger import logger
 import chirribackup.actions.BaseAction
 import chirribackup.LocalDatabase
-import chirribackup.Snapshot
+import chirribackup.snapshot
 import sys
 import time
 
@@ -65,7 +65,7 @@ class SnapshotPrint(chirribackup.actions.BaseAction.BaseAction):
 
     def go(self, snapshot_id, output_format = "txt"):
         self.ldb = chirribackup.LocalDatabase.LocalDatabase(CONFIG.path)
-        snp = chirribackup.Snapshot.Snapshot(self.ldb).load(snapshot_id)
+        snp = chirribackup.snapshot.Snapshot(self.ldb).load(snapshot_id)
         print snp.desc_print(output_format)
 
 

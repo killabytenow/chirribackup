@@ -28,7 +28,7 @@ import os
 import time
 import traceback
 
-import chirribackup.Snapshot
+import chirribackup.snapshot
 import chirribackup.compression
 from chirribackup.Logger import logger
 from chirribackup.exceptions import ChirriException, ChunkNotFoundException, ChunkBadFilenameException

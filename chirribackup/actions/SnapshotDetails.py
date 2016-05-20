@@ -29,7 +29,7 @@ from chirribackup.Config import CONFIG
 from chirribackup.Logger import logger
 import chirribackup.actions.BaseAction
 import chirribackup.LocalDatabase
-import chirribackup.Snapshot
+import chirribackup.snapshot
 import sys
 import time
 
@@ -57,7 +57,7 @@ class SnapshotDetails(chirribackup.actions.BaseAction.BaseAction):
 
     def go(self, snapshot_id):
         self.ldb = chirribackup.LocalDatabase.LocalDatabase(CONFIG.path)
-        snp = chirribackup.Snapshot.Snapshot(self.ldb).load(snapshot_id)
+        snp = chirribackup.snapshot.Snapshot(self.ldb).load(snapshot_id)
 
         print "Details for snapshot %d" % (snp.snapshot_id)
         print "    status             = %s" % (snp.status if snp.status is not None else "")

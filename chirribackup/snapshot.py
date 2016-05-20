@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 ###############################################################################
-# chirribackup/Snapshot.py
+# chirribackup/snapshot.py
 #
 #   Snapshot manager
 #
