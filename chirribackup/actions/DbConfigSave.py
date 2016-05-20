@@ -26,15 +26,10 @@
 # 
 ###############################################################################
 
-from chirribackup.Config import CONFIG
-from chirribackup.Logger import logger
-import chirribackup.actions.BaseAction
-import chirribackup.Crypto
 import chirribackup.Input
 import chirribackup.LocalDatabase
-import os
-import json
-import sys
+import chirribackup.actions.BaseAction
+from chirribackup.Config import CONFIG
 
 
 class DbConfigSave(chirribackup.actions.BaseAction.BaseAction):

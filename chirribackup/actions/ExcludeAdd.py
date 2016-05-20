@@ -24,15 +24,12 @@
 # 
 ###############################################################################
 
-from chirribackup.exceptions import ChirriException
-from chirribackup.Config import CONFIG
-from chirribackup.Logger import logger
-import chirribackup.actions.BaseAction
-import chirribackup.Crypto
-import chirribackup.exclude
 import chirribackup.LocalDatabase
-import os
-import sys
+import chirribackup.actions.BaseAction
+import chirribackup.exclude
+from chirribackup.Config import CONFIG
+from chirribackup.exceptions import ChirriException
+
 
 class ExcludeAdd(chirribackup.actions.BaseAction.BaseAction):
 

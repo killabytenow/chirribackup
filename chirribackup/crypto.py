@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 ###############################################################################
-# chirribackup/Crypto.py
+# chirribackup/crypto.py
 #
 #   Helper crypto funcs
 #

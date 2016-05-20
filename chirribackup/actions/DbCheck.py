@@ -27,12 +27,12 @@
 import os
 import re
 
-import chirribackup.chunk
-import chirribackup.Crypto
 import chirribackup.Input
 import chirribackup.LocalDatabase
 import chirribackup.actions.BaseAction
+import chirribackup.chunk
 import chirribackup.compression
+import chirribackup.crypto
 from chirribackup.Config import CONFIG
 from chirribackup.Logger import logger
 from chirribackup.exceptions import ChirriException, ChunkBadFilenameException, ChunkNotFoundException, \
@@ -100,7 +100,7 @@ class DbCheck(chirribackup.actions.BaseAction.BaseAction):
             bad_chunk = False
 
             # 1. check hash id
-            if not chirribackup.Crypto.ChirriHasher.hash_check(chunk.hash):
+            if not chirribackup.crypto.ChirriHasher.hash_check(chunk.hash):
                 logger.error("Malformed hash '%s' in chunk" % chunk.hash)
                 bad_chunk = True
 
@@ -192,7 +192,7 @@ class DbCheck(chirribackup.actions.BaseAction.BaseAction):
                 # decompress and hash
                 fpath = os.path.realpath(os.path.join(self.ldb.chunks_dir, chunk.get_filename()))
                 try:
-                    h = chirribackup.Crypto.ChirriHasher.hash_file(
+                    h = chirribackup.crypto.ChirriHasher.hash_file(
                                 fpath,
                                 chirribackup.compression.Decompressor(chunk.compression))
 

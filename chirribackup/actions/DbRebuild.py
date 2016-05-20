@@ -28,7 +28,6 @@ import re
 import sys
 import time
 
-import chirribackup.Crypto
 import chirribackup.LocalDatabase
 import chirribackup.actions.DbCreator
 import chirribackup.actions.SnapshotList

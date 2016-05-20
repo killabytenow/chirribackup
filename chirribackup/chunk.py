@@ -25,6 +25,12 @@
 ###############################################################################
 from __future__ import absolute_import
 
+import exceptions
+import os
+import re
+
+import chirribackup.compression
+import chirribackup.crypto
 from chirribackup.Logger import logger
 from chirribackup.exceptions import \
     ChirriException,                \
@@ -32,11 +38,6 @@ from chirribackup.exceptions import \
     ChunkBadFilenameException,      \
     ChunkBadHashException,          \
     ChunkNotFoundException
-import chirribackup.compression
-import chirribackup.Crypto
-import exceptions
-import os
-import re
 
 # CONSTANTS
 READ_BLOCKSIZE = (1024*1024)
@@ -60,7 +61,7 @@ class Chunk(object):
 
 
     def load(self, hash):
-        if not chirribackup.Crypto.ChirriHasher.hash_check(hash):
+        if not chirribackup.crypto.ChirriHasher.hash_check(hash):
             raise ChunkBadHashException("Bad hash '%s'." % hash)
         c = self.ldb.connection.execute(
                 "SELECT * FROM file_data WHERE hash = :hash",
@@ -84,7 +85,7 @@ class Chunk(object):
 
         # create snapshot (while hashing and compressing)
         compressor = chirribackup.compression.Compressor(compression, tmp_file)
-        sh = chirribackup.Crypto.ChirriHasher()
+        sh = chirribackup.crypto.ChirriHasher()
         try:
             with open(local_file, 'rb') as ifile:
                 buf = ifile.read(READ_BLOCKSIZE)
@@ -145,7 +146,7 @@ class Chunk(object):
             try:
                 # hash found file
                 decompressor = chirribackup.compression.Decompressor(compression)
-                eh = chirribackup.Crypto.ChirriHasher()
+                eh = chirribackup.crypto.ChirriHasher()
                 with open(target_file, 'rb') as ifile:
                     buf = ifile.read(READ_BLOCKSIZE)
                     while len(buf) > 0:
@@ -201,7 +202,7 @@ class Chunk(object):
                 raise ChirriException("Chunk file '%s' already exists." % target_file)
 
             # yep! chunk is already on disk.. decide what to do...
-            eh = chirribackup.Crypto.hash_file(target_file)
+            eh = chirribackup.crypto.hash_file(target_file)
             if eh.hash != h:
                 # hashes doesn't match... it is surely an old partial chunk of
                 # a previous restore operation (cancelled), delete it from disk
@@ -222,7 +223,7 @@ class Chunk(object):
         else:
             try:
                 decompressor = chirribackup.compression.Decompressor(self.compression, target_file)
-                sh = chirribackup.Crypto.ChirriHasher()
+                sh = chirribackup.crypto.ChirriHasher()
                 with open(tmp_file, 'rb') as ifile:
                     buf = ifile.read(READ_BLOCKSIZE)
                     while len(buf) > 0:
@@ -285,7 +286,7 @@ class Chunk(object):
 
 
     def hash_format(self):
-        return chirribackup.Crypto.ChirriHasher.hash_format(self.hash)
+        return chirribackup.crypto.ChirriHasher.hash_format(self.hash)
 
 
     def get_filename(self, prefix = "", postfix = ""):
@@ -377,7 +378,7 @@ class Chunk(object):
                     })
         else:
             raise ChirriException("Cannot add existing chunk %s" \
-                                  % chirribackup.Crypto.ChirriHasher.hash_format(hash))
+                                  % chirribackup.crypto.ChirriHasher.hash_format(hash))
 
         return Chunk(ldb, hash)
 

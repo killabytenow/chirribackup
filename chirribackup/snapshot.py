@@ -24,10 +24,6 @@
 # 
 ###############################################################################
 
-from chirribackup.exceptions import ChirriException
-from chirribackup.Logger import logger
-import chirribackup.chunk
-import chirribackup.Crypto
 import fnmatch
 import json
 import os
@@ -35,6 +31,12 @@ import re
 import shutil
 import stat
 import time
+
+import chirribackup.chunk
+import chirribackup.crypto
+from chirribackup.Logger import logger
+from chirribackup.exceptions import ChirriException
+
 
 class Snapshot(object):
 
@@ -150,7 +152,7 @@ class Snapshot(object):
             return "dir"
         if hash_ref.startswith("symlink:"):
             return "symlink"
-        if chirribackup.Crypto.ChirriHasher.hash_check(hash_ref):
+        if chirribackup.crypto.ChirriHasher.hash_check(hash_ref):
             return "regfile"
         raise ChirriException("Unknown file_ref type '%s'." % hash_ref)
 
@@ -169,7 +171,7 @@ class Snapshot(object):
             if hash_ref is None:
                 return "file_not_hashed"
             else:
-                return chirribackup.Crypto.ChirriHasher.hash_format(hash_ref)
+                return chirribackup.crypto.ChirriHasher.hash_format(hash_ref)
         elif htype == "dir":
             return "dir"
         elif htype == "symlink":
@@ -636,7 +638,7 @@ class Snapshot(object):
             
     def desc_parse(self, desc):
         # unprotect
-        desc = chirribackup.Crypto.unprotect_string(desc)
+        desc = chirribackup.crypto.unprotect_string(desc)
 
         # try with json decoder
         d = self.__desc_parse_json(desc)
@@ -767,7 +769,7 @@ class Snapshot(object):
         else:
             raise ChirriException("Unknown output format '%s'." % output_format)
 
-        return chirribackup.Crypto.protect_string(d)
+        return chirribackup.crypto.protect_string(d)
 
 
     def destroy(self):
@@ -867,7 +869,7 @@ class Snapshot(object):
             # match with the chunk's hash
             target_file = os.path.join(target_path, r["path"])
             if os.path.exists(target_file):
-                hot = chirribackup.Crypto.hash_file(target_file)
+                hot = chirribackup.crypto.hash_file(target_file)
                 if hot["hex"] == r["hash"]:
                     # target file matches... don't add to the download queue
                     logger.info("File '%s' already downloaded." % r["path"])
