@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 ###############################################################################
-# ChirriBackup/Input.py
+# ChirriBackup/input.py
 #
 #   Input data.
 #

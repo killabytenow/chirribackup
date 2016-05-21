@@ -26,18 +26,21 @@
 # 
 ###############################################################################
 
-from chirribackup.exceptions import ChirriException
-from chirribackup.Logger import logger
-from googleapiclient import discovery
-from googleapiclient import errors
-from googleapiclient import http
-from oauth2client.service_account import ServiceAccountCredentials
-import chirribackup.storage.BaseStorage
 import StringIO
 import base64
 import hashlib
 import json
 import os
+
+from googleapiclient import discovery
+from googleapiclient import errors
+from googleapiclient import http
+from oauth2client.service_account import ServiceAccountCredentials
+
+import chirribackup.input
+import chirribackup.storage.BaseStorage
+from chirribackup.Logger import logger
+from chirribackup.exceptions import ChirriException
 
 
 class GoogleStorage(chirribackup.storage.BaseStorage.BaseStorage):
@@ -79,7 +82,7 @@ class GoogleStorage(chirribackup.storage.BaseStorage.BaseStorage):
             while True:
                 config["sm_gs_json_creds_file"] = \
                     os.path.realpath(
-                        chirribackup.Input.ask("JSON API credentials file", config["sm_gs_json_creds_file"]))
+                        chirribackup.input.ask("JSON API credentials file", config["sm_gs_json_creds_file"]))
                 if not os.path.exists(config["sm_gs_json_creds_file"]):
                     print "ERROR: File '%s' does not exists. Try again."
                     continue
@@ -91,8 +94,8 @@ class GoogleStorage(chirribackup.storage.BaseStorage.BaseStorage):
                     continue
                 break
 
-            config["sm_gs_bucket"] = chirribackup.Input.ask("Bucket name", config["sm_gs_bucket"])
-            config["sm_gs_folder"] = chirribackup.Input.ask("Root folder path", config["sm_gs_folder"])
+            config["sm_gs_bucket"] = chirribackup.input.ask("Bucket name", config["sm_gs_bucket"])
+            config["sm_gs_folder"] = chirribackup.input.ask("Root folder path", config["sm_gs_folder"])
 
 
     def upload_file(self, remote_file, local_file):

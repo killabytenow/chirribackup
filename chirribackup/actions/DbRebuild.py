@@ -33,6 +33,7 @@ import chirribackup.actions.DbCreator
 import chirribackup.actions.SnapshotList
 import chirribackup.chunk
 import chirribackup.compression
+import chirribackup.input
 import chirribackup.snapshot
 from chirribackup.Config import CONFIG
 from chirribackup.Logger import logger
@@ -145,7 +146,7 @@ class DbRebuild(chirribackup.actions.DbCreator.DbCreator):
                            time.strftime("%d/%m/%Y %H:%M:%S", time.localtime(ss.uploaded_tstamp)) if ss.uploaded_tstamp is not None else None)
 
             print ""
-            self.ldb.rebuild_snapshot = chirribackup.Input.ask(
+            self.ldb.rebuild_snapshot = chirribackup.input.ask(
                                             "Choose snapshot",
                                             self.ldb.last_snapshot_id,
                                             "^[1-9][0-9]*$")

@@ -26,7 +26,7 @@
 
 from chirribackup.exceptions import ChirriException
 from chirribackup.Logger import logger
-import chirribackup.Input
+import chirribackup.input
 import chirribackup.storage.BaseStorage
 import shutil
 import os
@@ -82,7 +82,7 @@ class Local(chirribackup.storage.BaseStorage.BaseStorage):
     def ask_config(self, config):
         ok = False
         while not ok:
-            config["sm_local_storage_dir"] = os.path.realpath(os.path.expanduser(chirribackup.Input.ask("storage directory", config["sm_local_storage_dir"])))
+            config["sm_local_storage_dir"] = os.path.realpath(os.path.expanduser(chirribackup.input.ask("storage directory", config["sm_local_storage_dir"])))
             if os.path.exists(config["sm_local_storage_dir"]) \
             and not os.path.isdir(config["sm_local_storage_dir"]):
                 logger.error("Path '%s' is not a directory.")

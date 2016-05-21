@@ -27,7 +27,7 @@
 import os
 import re
 
-import chirribackup.Input
+import chirribackup.input
 import chirribackup.LocalDatabase
 import chirribackup.actions.BaseAction
 import chirribackup.chunk
@@ -65,7 +65,7 @@ class DbCheck(chirribackup.actions.BaseAction.BaseAction):
         r = self.fix != 0
 
         if self.fix > 1:
-            r = (chirribackup.Input.ask(q, "y", "^[yn]$") == "y")
+            r = (chirribackup.input.ask(q, "y", "^[yn]$") == "y")
 
         if r:
             logger.info("Apply '%s'" % q)

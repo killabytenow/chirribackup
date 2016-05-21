@@ -24,7 +24,7 @@
 # 
 ###############################################################################
 
-import chirribackup.Input
+import chirribackup.input
 import chirribackup.LocalDatabase
 import chirribackup.actions.BaseAction
 from chirribackup.Config import CONFIG

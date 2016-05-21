@@ -31,7 +31,7 @@ from chirribackup.Config import CONFIG
 from chirribackup.Logger import logger
 import chirribackup.actions.BaseAction
 import chirribackup.LocalDatabase
-import chirribackup.Input
+import chirribackup.input
 import chirribackup.exclude
 import os
 import sys
@@ -52,7 +52,7 @@ class DbCreator(chirribackup.actions.BaseAction.BaseAction):
         print "Basic configuration"
         print "==================="
         print ""
-        config["storage_type"] = chirribackup.Input.ask(
+        config["storage_type"] = chirribackup.input.ask(
                                     "storage type (local, gs)",
                                     config["storage_type"],
                                     "^(local|gs|Local|GoogleStorage)$")
@@ -61,7 +61,7 @@ class DbCreator(chirribackup.actions.BaseAction.BaseAction):
         elif config["storage_type"] == "gs":
             config["storage_type"] = "GoogleStorage"
 
-        config["compression"] = chirribackup.Input.ask(
+        config["compression"] = chirribackup.input.ask(
                                     "storage compression (none, lzma)",
                                     config["compression"],
                                     "^(none|lzma)$")
@@ -97,7 +97,7 @@ class DbCreator(chirribackup.actions.BaseAction.BaseAction):
         for k,v in config.items():
             print "  %-15s = %s" % (k, v)
         print ""
-        confirm = chirribackup.Input.ask("Continue (yes, no)", "y", "^(y(es)?|n(o)?)$")
+        confirm = chirribackup.input.ask("Continue (yes, no)", "y", "^(y(es)?|n(o)?)$")
         if confirm != "y":
             print "Aborting"
             return None

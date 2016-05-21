@@ -30,7 +30,7 @@ from chirribackup.Logger import logger
 import chirribackup.actions.BaseAction
 import chirribackup.LocalDatabase
 import chirribackup.snapshot
-import chirribackup.Input
+import chirribackup.input
 import sys
 import re
 
