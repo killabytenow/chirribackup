@@ -46,7 +46,7 @@ class Snapshot(object):
     deleted         = None
     started_tstamp  = None
     finished_tstamp = None
-    uploaded_tstamp = None
+    signed_tstamp   = None
     compression     = None
 
     def __init__(self, ldb):
@@ -79,7 +79,7 @@ class Snapshot(object):
         self.deleted         = None
         self.started_tstamp  = None
         self.finished_tstamp = None
-        self.uploaded_tstamp = None
+        self.signed_tstamp   = None
         self.compression     = None
 
         # create snapshot
@@ -112,7 +112,7 @@ class Snapshot(object):
         self.deleted         = row["deleted"]
         self.started_tstamp  = row["started_tstamp"]
         self.finished_tstamp = row["finished_tstamp"]
-        self.uploaded_tstamp = row["uploaded_tstamp"]
+        self.signed_tstamp   = row["signed_tstamp"]
         self.compression     = row["compression"]
         return self
 
@@ -503,7 +503,7 @@ class Snapshot(object):
                                 "deleted",
                                 "finished_tstamp",
                                 "started_tstamp",
-                                "uploaded_tstamp"
+                                "signed_tstamp",
                             ]:
             raise ChirriException("Invalid snapshot attribute '%s'." % attribute)
         self.ldb.connection.execute(
@@ -672,7 +672,7 @@ class Snapshot(object):
         for a in [
                     "started_tstamp",
                     "finished_tstamp",
-                    "uploaded_tstamp",
+                    "signed_tstamp",
                  ]:
             self.set_attribute(a, d["details"][a])
         for fr in d["refs"]:
@@ -739,7 +739,7 @@ class Snapshot(object):
                             "snapshot"        : self.snapshot_id,
                             "started_tstamp"  : self.started_tstamp,
                             "finished_tstamp" : self.finished_tstamp,
-                            "uploaded_tstamp" : self.uploaded_tstamp,
+                            "signed_tstamp"   : self.signed_tstamp,
                         },
                         "default" : mc,
                         "refs" : refs,
@@ -750,7 +750,7 @@ class Snapshot(object):
             d += "snapshot:        %s\n" % self.snapshot_id
             d += "started_tstamp:  %s\n" % self.started_tstamp
             d += "finished_tstamp: %s\n" % self.finished_tstamp
-            d += "uploaded_tstamp: %s\n" % self.uploaded_tstamp
+            d += "signed_tstamp:   %s\n" % self.signed_tstamp
             for f,v in mc.iteritems():
                 d += "default.%s: %s\n" % (f, v)
             d += "rows:\n"
@@ -801,7 +801,7 @@ class Snapshot(object):
         self.status          = None
         self.started_tstamp  = None
         self.finished_tstamp = None
-        self.uploaded_tstamp = None
+        self.signed_tstamp   = None
 
         # commit -- such a status change is a good commit point
         self.ldb.connection.commit()

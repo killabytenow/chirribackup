@@ -74,7 +74,7 @@ class Syncer(object):
             else:
                 if snp.status == 4:
                     # prepare snapshot for upload
-                    snp.set_attribute("uploaded_tstamp", int(time.time()))
+                    snp.set_attribute("signed_tstamp", int(time.time()))
                     desc = snp.desc_print()
                     if snp.compression is None:
                         if self.ldb.compression is not None:

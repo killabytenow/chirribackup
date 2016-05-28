@@ -134,7 +134,7 @@ class DbRebuild(chirribackup.actions.DbCreator.DbCreator):
         print ""
         ls = self.ldb.snapshot_list()
         if len(ls) > 0:
-            print "  id     status  started             finished            uploaded"
+            print "  id     status  started             finished            signed"
             print "  ------ ------- ------------------- ------------------- -------------------"
             for ss in ls:
                 if ss.deleted == 0:
@@ -143,7 +143,7 @@ class DbRebuild(chirribackup.actions.DbCreator.DbCreator):
                            ss.status,
                            time.strftime("%d/%m/%Y %H:%M:%S", time.localtime(ss.started_tstamp)) if ss.started_tstamp is not None else None,
                            time.strftime("%d/%m/%Y %H:%M:%S", time.localtime(ss.finished_tstamp)) if ss.finished_tstamp is not None else None,
-                           time.strftime("%d/%m/%Y %H:%M:%S", time.localtime(ss.uploaded_tstamp)) if ss.uploaded_tstamp is not None else None)
+                           time.strftime("%d/%m/%Y %H:%M:%S", time.localtime(ss.signed_tstamp)) if ss.signed_tstamp is not None else None)
 
             print ""
             self.ldb.rebuild_snapshot = chirribackup.input.ask(

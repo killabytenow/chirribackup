@@ -197,7 +197,7 @@ class LocalDatabase(object):
                     status          INTEGER NOT NULL,
                     started_tstamp  INTEGER,
                     finished_tstamp INTEGER,
-                    uploaded_tstamp INTEGER,
+                    signed_tstamp   INTEGER,
                     compression     VARCHAR(8),
                     deleted         INTEGER NOT NULL DEFAULT 0
                 )

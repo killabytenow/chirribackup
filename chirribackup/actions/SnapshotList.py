@@ -50,7 +50,7 @@ class SnapshotList(chirribackup.actions.BaseAction.BaseAction):
 
     def go(self):
         self.ldb = chirribackup.LocalDatabase.LocalDatabase(CONFIG.path)
-        print "snapshot  status  deleted started             finished            uploaded            compression"
+        print "snapshot  status  deleted started             finished            signed              compression"
         print "--------- ------- ------- ------------------- ------------------- ------------------- -----------"
         for ss in self.ldb.snapshot_list():
             print "%9s %7s %7s %19s %19s %19s %11s" \
@@ -59,7 +59,7 @@ class SnapshotList(chirribackup.actions.BaseAction.BaseAction):
                    "deleted" if ss.deleted != 0 else "",
                    time.strftime("%d/%m/%Y %H:%M:%S", time.localtime(ss.started_tstamp)) if ss.started_tstamp is not None else None,
                    time.strftime("%d/%m/%Y %H:%M:%S", time.localtime(ss.finished_tstamp)) if ss.finished_tstamp is not None else None,
-                   time.strftime("%d/%m/%Y %H:%M:%S", time.localtime(ss.uploaded_tstamp)) if ss.uploaded_tstamp is not None else None,
+                   time.strftime("%d/%m/%Y %H:%M:%S", time.localtime(ss.signed_tstamp)) if ss.signed_tstamp is not None else None,
                    ss.compression)
 
 

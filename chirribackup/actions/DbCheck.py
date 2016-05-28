@@ -80,8 +80,8 @@ class DbCheck(chirribackup.actions.BaseAction.BaseAction):
         # 2.1 check status >= 0 <= 5 or (status == -1 and rebuild)
         # 2.2 started_tstamp != NULL
         # 2.3 status > 3 => finished_tstamp != NULL
-        # 2.4 status > 5 => uploaded_tstamp != NULL
-        # 2.5 started_tstamp < finished_tstamp < uploaded_tstamp
+        # 2.4 status > 5 => signed_tstamp != NULL
+        # 2.5 started_tstamp < finished_tstamp < signed_tstamp
 
 
     def check_refs(self):
@@ -247,15 +247,44 @@ class DbCheck(chirribackup.actions.BaseAction.BaseAction):
 
 
     def check_db(self):
-        # add snapshot compression column
-        column_compression_exists = False
+        column_snapshots_compression_exists = False
+        column_snapshots_uploaded_tstamp_exists = False
+        column_snapshots_signed_tstamp_exists = False
         for c in self.ldb.connection.execute("PRAGMA table_info(snapshots)"):
             if c["name"] == "compression":
-                column_compression_exists = True
-        if not column_compression_exists:
+                column_snapshots_compression_exists = True
+            if c["name"] == "uploaded_tstamp":
+                column_snapshots_uploaded_tstamp_exists = True
+            if c["name"] == "signed_tstamp":
+                column_snapshots_signed_tstamp_exists = True
+
+        # add snapshots.compression column
+        if not column_snapshots_compression_exists:
             logger.warning("Adding missing column snapshots.compression")
             self.ldb.connection.execute("ALTER TABLE snapshots ADD COLUMN compression VARCHAR(8)")
-        self.ldb.connection.commit()
+            self.ldb.connection.commit()
+
+        # add snapshots.signed column
+        if not column_snapshots_signed_tstamp_exists:
+            logger.warning("Adding missing column snapshots.signed_tstamp")
+            self.ldb.connection.execute("ALTER TABLE snapshots ADD COLUMN signed_tstamp INTEGER")
+            if column_snapshots_uploaded_tstamp_exists:
+                self.ldb.connection.execute(
+                    """
+                        UPDATE snapshots
+                        SET signed_tstamp = uploaded_tstamp
+                    """)
+            self.ldb.connection.commit()
+
+        # delete snapshots.uploaded_tstamp column
+        if column_snapshots_uploaded_tstamp_exists:
+            # XXX: sqlite3 does not support ALTER TABLE DROP COLUMN, so we do
+            # not do nothing here. It is only an unused column in a local
+            # database, we can cope with some little anoying bytes.
+            #logger.warning("Delete unused column snapshots.uploaded_tstamp")
+            #self.ldb.connection.execute("ALTER TABLE snapshots DROP COLUMN uploaded_tstamp")
+            #self.ldb.connection.commit()
+            logger.warning("Detected an old database with snapshots.uploaded_tstamp column. Ignoring it.")
 
         # check for unknown config values
         # check status value
