@@ -98,6 +98,31 @@ class GoogleStorage(chirribackup.storage.BaseStorage.BaseStorage):
             config["sm_gs_folder"] = chirribackup.input.ask("Root folder path", config["sm_gs_folder"])
 
 
+    def __upload_iobase(self, remote_file, md5sum, f):
+        media = http.MediaIoBaseUpload(
+                        f,
+                        mimetype="application/octet-stream",
+                        resumable=True)
+        request = self.service.objects().insert(
+                    bucket = self.ldb.sm_gs_bucket,
+                    body = {
+                        "name"    : self.__build_gs_path(remote_file),
+                        "md5Hash" : md5sum,
+                    },
+                    media_body = media)
+
+        response = None
+        last_progress = 0
+        while response is None:
+            status, response = request.next_chunk()
+            if status:
+                current_progress = int(status.progress() * 100)
+                if last_progress != current_progress:
+                    last_progress = int(status.progress() * 100)
+                    logger.info("%s: Uploaded %d%%." % (remote_file, current_progress))
+        logger.info("%s: Upload Complete!" % remote_file)
+
+
     def upload_file(self, remote_file, local_file):
         # calculate md5sum of uploaded file
         size = 0
@@ -111,42 +136,16 @@ class GoogleStorage(chirribackup.storage.BaseStorage.BaseStorage):
 
         # upload file
         with open(local_file, "rb") as f:
-            media = http.MediaIoBaseUpload(
-                            f,
-                            mimetype='image/png',
-                            resumable=True)
-            request = self.service.objects().insert(
-                        bucket = self.ldb.sm_gs_bucket,
-                        body = {
-                            "name"    : self.__build_gs_path(remote_file),
-                            "md5Hash" : md5sum,
-                        },
-                        media_body = media)
-
-            response = None
-            while response is None:
-                status, response = request.next_chunk()
-                if status:
-                    logger.info("%s: Uploaded %d%%." % (local_file, int(status.progress() * 100)))
-            logger.info("%s: Upload Complete!" % local_file)
+            self.__upload_iobase(remote_file, md5sum, f)
 
 
     def upload_data(self, remote_file, data):
         # calculate md5sum of uploaded file
         md5sum = base64.b64encode(hashlib.md5(data).digest())
-        logger.debug("Going to upload %d bytes" % len(data))
+        logger.info("Going to upload %d bytes" % len(data))
 
         # upload file
-        req = self.service.objects().insert(
-                bucket = self.ldb.sm_gs_bucket,
-                body = {
-                    "name"    : self.__build_gs_path(remote_file),
-                    "md5Hash" : md5sum,
-                },
-                media_body = http.MediaIoBaseUpload(
-                                StringIO.StringIO(data),
-                                "application/octet-stream"))
-        resp = req.execute()
+        self.__upload_iobase(remote_file, md5sum, StringIO.StringIO(data))
 
 
     def get_listing(self, path = ""):
