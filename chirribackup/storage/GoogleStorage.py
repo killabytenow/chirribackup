@@ -107,20 +107,28 @@ class GoogleStorage(chirribackup.storage.BaseStorage.BaseStorage):
                 size += len(chunk)
                 h.update(chunk)
         md5sum = base64.b64encode(h.digest())
-        logger.debug("Going to upload %d bytes" % size)
+        logger.info("%s: Going to upload %d bytes" % (local_file, size))
 
         # upload file
         with open(local_file, "rb") as f:
-            req = self.service.objects().insert(
-                    bucket = self.ldb.sm_gs_bucket,
-                    body = {
-                        "name"    : self.__build_gs_path(remote_file),
-                        "md5Hash" : md5sum,
-                    },
-                    media_body = http.MediaIoBaseUpload(
-                                    f,
-                                    "application/octet-stream"))
-            resp = req.execute()
+            media = http.MediaIoBaseUpload(
+                            f,
+                            mimetype='image/png',
+                            resumable=True)
+            request = self.service.objects().insert(
+                        bucket = self.ldb.sm_gs_bucket,
+                        body = {
+                            "name"    : self.__build_gs_path(remote_file),
+                            "md5Hash" : md5sum,
+                        },
+                        media_body = media)
+
+            response = None
+            while response is None:
+                status, response = request.next_chunk()
+                if status:
+                    logger.info("%s: Uploaded %d%%." % (local_file, int(status.progress() * 100)))
+            logger.info("%s: Upload Complete!" % local_file)
 
 
     def upload_data(self, remote_file, data):
