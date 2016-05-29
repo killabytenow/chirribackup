@@ -651,6 +651,12 @@ class Snapshot(object):
         if d is None:
             raise BadSnapshotDescException("Cannot parse snapshot description")
         
+        # retrocompatibility fix: during development of version 1,
+        # 'uploaded_tstamp' field was renamed to 'signed_tstamp'
+        if "uploaded_tstamp" in d["details"]:
+            d["details"]["signed_tstamp"] = d["details"]["uploaded_tstamp"]
+            del d["details"]["uploaded_tstamp"]
+
         # check snapshot is in status < 0
         if self.status >= 0:
             raise BadSnapshotStatusException("Snapshot %s is in state %d." \
