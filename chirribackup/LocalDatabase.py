@@ -281,20 +281,50 @@ class LocalDatabase(object):
 
 
     def counters(self):
-        c = self.connection.cursor()
         counters = { }
 
-        c.execute("SELECT COUNT(*) FROM file_data")
-        counters["blobs"] = c.fetchone()[0]
-        c.execute("SELECT SUM(size) FROM file_data")
-        counters["blob_bytes"] = c.fetchone()[0]
-        c.execute("SELECT COUNT(*) FROM file_data WHERE refcount == 0")
-        counters["hangers"] = c.fetchone()[0]
-        c.execute("SELECT COUNT(*) FROM snapshots")
-        counters["snapshots"] = c.fetchone()[0]
-        c.execute("SELECT COUNT(*) FROM excludes")
-        counters["excludes"] = c.fetchone()[0]
+        # chunk count
+        for counter,query in {
+                    # chunks count
+                    "chunks":
+                        "SELECT COUNT(*) FROM file_data",
+                    "chunks_not_referenced":
+                        "SELECT COUNT(*) FROM file_data WHERE refcount = 0",
+
+                    # chunks' volume count
+                    "chunks_bytes":
+                        "SELECT SUM(size) FROM file_data",
+                    "chunks_bytes_not_referenced":
+                        "SELECT SUM(size) FROM file_data WHERE refcount = 0",
+                    "chunks_bytes_uploaded":
+                        "SELECT SUM(size) FROM file_data WHERE status = 1",
+                    "chunks_bytes_pending_upload":
+                        "SELECT SUM(size) FROM file_data WHERE status = 0",
+
+                    # chunks' compressed volume count
+                    "chunks_compressed_bytes":
+                        "SELECT SUM(csize) FROM file_data",
+                    "chunks_compressed_bytes_not_referenced":
+                        "SELECT SUM(csize) FROM file_data WHERE refcount = 0",
+                    "chunks_compressed_bytes_uploaded":
+                        "SELECT SUM(csize) FROM file_data WHERE status = 1",
+                    "chunks_compressed_bytes_pending_upload":
+                        "SELECT SUM(csize) FROM file_data WHERE status = 0",
+
+                    # count snapshots
+                    "snapshots":
+                        "SELECT COUNT(*) FROM snapshots",
+
+                    # count excludes
+                    "excludes":
+                        "SELECT COUNT(*) FROM excludes",
+                }.iteritems():
+            counters[counter] = self.connection.execute(query).fetchone()[0]
+            if counters[counter] is None:
+                counters[counter] = 0
+
         counters["file_refs"] = { }
+        c = self.connection.cursor()
         for fr in c.execute("""
                                 SELECT snapshot, COUNT(*) as nfr
                                 FROM file_ref
