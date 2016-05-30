@@ -288,6 +288,10 @@ class LocalDatabase(object):
                     # chunks count
                     "chunks":
                         "SELECT COUNT(*) FROM file_data",
+                    "chunks_not_uploaded":
+                        "SELECT COUNT(*) FROM file_data WHERE status = 0",
+                    "chunks_uploaded":
+                        "SELECT COUNT(*) FROM file_data WHERE status = 1",
                     "chunks_not_referenced":
                         "SELECT COUNT(*) FROM file_data WHERE refcount = 0",
 

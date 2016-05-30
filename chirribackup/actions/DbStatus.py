@@ -63,18 +63,20 @@ class DbStatus(chirribackup.actions.BaseAction.BaseAction):
             print "  - Database is being rebuilt!"
         print "  - %d chunks in repository" % counters["chunks"]
         print "      - %d are not referenced" % counters["chunks_not_referenced"]
+        print "      - %d are uploaded" % counters["chunks_uploaded"]
+        print "      - %d are not uploaded" % counters["chunks_not_uploaded"]
         if counters["excludes"] > 0:
             print "  - %d exclude rules (see exclude list)" % counters["excludes"]
         if counters["chunks_bytes"] is None:
             print "  - No data stored yet"
         else:
             print "  - %s stored" % self.format_num_bytes(counters["chunks_bytes"])
+            print "      - %s not referenced" % self.format_num_bytes(counters["chunks_bytes_not_referenced"])
             print "      - %s compressed data (ratio %.2f)" % (
                                 self.format_num_bytes(counters["chunks_compressed_bytes"]),
                                 (float(counters["chunks_compressed_bytes"]) / float(counters["chunks_bytes"])))
-            print "      - %s uploaded" % self.format_num_bytes(counters["chunks_bytes_uploaded"])
-            print "      - %s not referenced" % self.format_num_bytes(counters["chunks_bytes_not_referenced"])
-            print "      - %s pending upload" % self.format_num_bytes(counters["chunks_bytes_pending_upload"])
+            print "      - %s uploaded" % self.format_num_bytes(counters["chunks_compressed_bytes_uploaded"])
+            print "      - %s pending upload" % self.format_num_bytes(counters["chunks_compressed_bytes_pending_upload"])
         print "  - %d snapshots in database" % (counters["snapshots"])
 
         if counters["snapshots"] > 0:
