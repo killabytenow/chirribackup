@@ -474,7 +474,7 @@ class LocalDatabase(object):
 
     def config_snapshot(self):
         # get status table (remove not saveable elements)
-        status = self.get()
+        status = self.config_attrib_list()
         for k, s in status.items():
             if s["save"] == 0:
                 del(status[k])
