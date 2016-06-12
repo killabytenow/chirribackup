@@ -65,3 +65,14 @@ def IndentString(s, indent = "  ", indent_first_line = True):
 
     return r
 
+
+def format_num_bytes(value):
+    if   value > (1024.0 ** 3): r = "%.2f Gb" % (value / (1024.0 ** 3))
+    elif value > (1024.0 ** 2): r = "%.2f Mb" % (value / (1024.0 ** 2))
+    elif value > 1024.0:        r = "%.2f Kb" % (value / 1024.0)
+    elif value == 1:            r = "1 byte"
+    else:                       r = "%d bytes" % value
+
+    return r
+
+

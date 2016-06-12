@@ -24,9 +24,10 @@
 # 
 ###############################################################################
 
-from chirribackup.exceptions import ChirriException
 from chirribackup.Config import CONFIG
 from chirribackup.Logger import logger
+from chirribackup.StringFormat import format_num_bytes
+from chirribackup.exceptions import ChirriException
 import chirribackup.actions.BaseAction
 import chirribackup.LocalDatabase
 import chirribackup.syncer
@@ -52,7 +53,7 @@ class Sync(chirribackup.actions.BaseAction.BaseAction):
         print "Finished succesfully:"
         print "  - Uploaded %d snapshots" % syncer.counters["snapshots"]
         print "  - Uploaded %d chunks"    % syncer.counters["chunks"]
-        print "  - Uploaded %d bytes" % syncer.counters["bytes"]
+        print "  - Uploaded %s" % format_num_bytes(syncer.counters["bytes"])
         print "  - Uploaded %d files" % syncer.counters["files"]
 
 

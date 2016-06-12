@@ -105,6 +105,18 @@ class ExcludeNotFound(ChirriException):
 class FilesystemException(ChirriException):
     pass
 
-
 class UnknownParameterException(ChirriException):
     pass
+
+class StorageException(ChirriException):
+    pass
+
+class StorageCommunicationException(StorageException):
+    pass
+
+class StorageTemporaryCommunicationException(StorageCommunicationException):
+    pass
+
+class StoragePermanentCommunicationException(StorageCommunicationException):
+    pass
+

@@ -27,6 +27,7 @@ from chirribackup import ActionsManager
 from chirribackup.Config import CONFIG
 from chirribackup.Logger import logger
 import sys
+import pprint
 
 from chirribackup.exceptions import ActionInvocationException, ChirriException
 
@@ -41,4 +42,12 @@ except ChirriException, ex:
     logger.critical(str(ex))
     sys.exit(1)
 
+except Exception, ex:
+    logger.error("dir(Exception)           = (%s)" % ", ".join(dir(Exception)))
+    logger.error("dir(Exception.__class__) = (%s)" % ", ".join(dir(Exception.__class__)))
+    logger.error("ex.__class__             = [%s]" % ex.__class__)
+    logger.error("ex.__class__.__name__    = [%s]" % ex.__class__.__name__)
+    logger.error(str(ex))
+    logger.error(pprint.PrettyPrinter(depth=6))
+    sys.exit(1)
 sys.exit(0)

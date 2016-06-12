@@ -27,6 +27,7 @@
 from chirribackup.exceptions import ChirriException
 from chirribackup.Config import CONFIG
 from chirribackup.Logger import logger
+from chirribackup.StringFormat import format_num_bytes
 import chirribackup.actions.BaseAction
 import chirribackup.LocalDatabase
 import chirribackup.input
@@ -45,14 +46,6 @@ class DbStatus(chirribackup.actions.BaseAction.BaseAction):
         return {}
 
 
-    def format_num_bytes(self, value):
-        if   value > (1024.0 ** 3): r = "%.2f Gb" % (value / (1024.0 ** 3))
-        elif value > (1024.0 ** 2): r = "%.2f Mb" % (value / (1024.0 ** 2))
-        elif value > 1024.0:        r = "%.2f Kb" % (value / 1024.0)
-        else:                       r = "%d bytes" % value
-
-        return r
-
     def go(self):
         self.ldb = chirribackup.LocalDatabase.LocalDatabase(CONFIG.path)
         counters = self.ldb.counters()
@@ -70,13 +63,13 @@ class DbStatus(chirribackup.actions.BaseAction.BaseAction):
         if counters["chunks_bytes"] is None:
             print "  - No data stored yet"
         else:
-            print "  - %s stored" % self.format_num_bytes(counters["chunks_bytes"])
-            print "      - %s not referenced" % self.format_num_bytes(counters["chunks_bytes_not_referenced"])
+            print "  - %s stored" % format_num_bytes(counters["chunks_bytes"])
+            print "      - %s not referenced" % format_num_bytes(counters["chunks_bytes_not_referenced"])
             print "      - %s compressed data (ratio %.2f)" % (
-                                self.format_num_bytes(counters["chunks_compressed_bytes"]),
+                                format_num_bytes(counters["chunks_compressed_bytes"]),
                                 (float(counters["chunks_compressed_bytes"]) / float(counters["chunks_bytes"])))
-            print "      - %s uploaded" % self.format_num_bytes(counters["chunks_compressed_bytes_uploaded"])
-            print "      - %s pending upload" % self.format_num_bytes(counters["chunks_compressed_bytes_pending_upload"])
+            print "      - %s uploaded" % format_num_bytes(counters["chunks_compressed_bytes_uploaded"])
+            print "      - %s pending upload" % format_num_bytes(counters["chunks_compressed_bytes_pending_upload"])
         print "  - %d snapshots in database" % (counters["snapshots"])
 
         if counters["snapshots"] > 0:

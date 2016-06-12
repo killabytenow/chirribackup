@@ -37,10 +37,11 @@ from googleapiclient import errors
 from googleapiclient import http
 from oauth2client.service_account import ServiceAccountCredentials
 
+from chirribackup.Logger import logger
+from chirribackup.StringFormat import format_num_bytes
+from chirribackup.exceptions import ChirriException
 import chirribackup.input
 import chirribackup.storage.BaseStorage
-from chirribackup.Logger import logger
-from chirribackup.exceptions import ChirriException
 
 
 class GoogleStorage(chirribackup.storage.BaseStorage.BaseStorage):
@@ -98,29 +99,38 @@ class GoogleStorage(chirribackup.storage.BaseStorage.BaseStorage):
             config["sm_gs_folder"] = chirribackup.input.ask("Root folder path", config["sm_gs_folder"])
 
 
-    def __upload_iobase(self, remote_file, md5sum, f):
-        media = http.MediaIoBaseUpload(
-                        f,
-                        mimetype="application/octet-stream",
-                        resumable=True)
-        request = self.service.objects().insert(
-                    bucket = self.ldb.sm_gs_bucket,
-                    body = {
-                        "name"    : self.__build_gs_path(remote_file),
-                        "md5Hash" : md5sum,
-                    },
-                    media_body = media)
+    def __upload_iobase(self, remote_file, md5sum, f, retry = 0):
+        try:
+            media = http.MediaIoBaseUpload(
+                            f,
+                            mimetype="application/octet-stream",
+                            resumable=True)
+            request = self.service.objects().insert(
+                        bucket = self.ldb.sm_gs_bucket,
+                        body = {
+                            "name"    : self.__build_gs_path(remote_file),
+                            "md5Hash" : md5sum,
+                        },
+                        media_body = media)
 
-        response = None
-        last_progress = 0
-        while response is None:
-            status, response = request.next_chunk()
-            if status:
-                current_progress = int(status.progress() * 100)
-                if last_progress != current_progress:
-                    last_progress = int(status.progress() * 100)
-                    logger.info("%s: Uploaded %d%%." % (remote_file, current_progress))
-        logger.info("%s: Upload Complete!" % remote_file)
+            response = None
+            last_progress = 0
+            while response is None:
+                status, response = request.next_chunk()
+                if status:
+                    current_progress = int(status.progress() * 100)
+                    if last_progress != current_progress:
+                        last_progress = int(status.progress() * 100)
+                        logger.info("    Uploaded %d%%." % current_progress)
+            logger.info("    Upload Complete!")
+
+        except socket.error, ex:
+            logger.error("errno = %s" % ex.errno)
+            if ex.errno == errno.ECONNRESET \
+            or ex.errno ==  errno.ETIMEDOUT:
+                raise StorageTemporaryCommunicationException(str(ex))
+            else:
+                raise StoragePermanentCommunicationException(str(ex))
 
 
     def upload_file(self, remote_file, local_file):
@@ -132,7 +142,7 @@ class GoogleStorage(chirribackup.storage.BaseStorage.BaseStorage):
                 size += len(chunk)
                 h.update(chunk)
         md5sum = base64.b64encode(h.digest())
-        logger.info("%s: Going to upload %d bytes" % (local_file, size))
+        logger.info("Going to upload %s" % (format_num_bytes(size)))
 
         # upload file
         with open(local_file, "rb") as f:
@@ -142,7 +152,7 @@ class GoogleStorage(chirribackup.storage.BaseStorage.BaseStorage):
     def upload_data(self, remote_file, data):
         # calculate md5sum of uploaded file
         md5sum = base64.b64encode(hashlib.md5(data).digest())
-        logger.info("Going to upload %d bytes" % len(data))
+        logger.info("Going to upload %s" % format_num_bytes(len(data)))
 
         # upload file
         self.__upload_iobase(remote_file, md5sum, StringIO.StringIO(data))
