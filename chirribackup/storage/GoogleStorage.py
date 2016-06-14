@@ -39,7 +39,8 @@ from oauth2client.service_account import ServiceAccountCredentials
 
 from chirribackup.Logger import logger
 from chirribackup.StringFormat import format_num_bytes
-from chirribackup.exceptions import ChirriException
+from chirribackup.exceptions import ChirriException, \
+                                    StorageTemporaryCommunicationException
 import chirribackup.input
 import chirribackup.storage.BaseStorage
 

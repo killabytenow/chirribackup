@@ -32,7 +32,10 @@ import chirribackup.chunk
 import chirribackup.compression
 import chirribackup.snapshot
 from chirribackup.Logger import logger
-from chirribackup.exceptions import ChirriException, ChunkNotFoundException, ChunkBadFilenameException
+from chirribackup.exceptions import ChirriException, \
+                                    ChunkNotFoundException, \
+                                    ChunkBadFilenameException, \
+                                    StorageTemporaryCommunicationException
 
 
 class Syncer(object):
@@ -138,6 +141,9 @@ class Syncer(object):
             logger.warning("[DEL] Remote chunk %s." % chunk.hash_format())
             self.sm.delete_file(remote_chunk)
             chunk.destroy()
+        else:
+            # optimization: avoids execution of a meaningless commit
+            return True
 
         # commit on each operation
         self.ldb.connection.commit()
