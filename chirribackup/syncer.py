@@ -127,9 +127,7 @@ class Syncer(object):
                     logger.info("[UPD] %s" % chunk.hash_format())
                 except StorageTemporaryCommunicationException, ex:
                     logger.error("Temporary error when uploading %s (%s): %s" \
-                                    % (self.ldb.hash_format(chunk.hash),
-                                       chunk.first_seen_as,
-                                       ex))
+                                    % (chunk.hash_format(), chunk.first_seen_as, ex))
                     return False
             else:
                 # not referenced chunk, not uploaded => local delete
@@ -177,7 +175,7 @@ class Syncer(object):
                 else:
                     logger.warning("%s: Upload cancelled by temporary error -- I will retry later" \
                                     % try_item[0].hash_format())
-                    try_list.push(try_item)
+                    try_list.append(try_item)
 
         # delete forgotten chunks in disk
         for fname in os.listdir(os.path.realpath(self.ldb.chunks_dir)):

@@ -28,9 +28,11 @@
 
 import StringIO
 import base64
+import errno
 import hashlib
 import json
 import os
+import socket
 
 from googleapiclient import discovery
 from googleapiclient import errors
