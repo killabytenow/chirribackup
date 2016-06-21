@@ -33,6 +33,7 @@ import hashlib
 import json
 import os
 import socket
+from httplib import HTTPException
 
 from googleapiclient import discovery
 from googleapiclient import errors
@@ -134,6 +135,11 @@ class GoogleStorage(chirribackup.storage.BaseStorage.BaseStorage):
                 raise StorageTemporaryCommunicationException(str(ex))
             else:
                 raise StoragePermanentCommunicationException(str(ex))
+
+        except HTTPException, ex:
+            logger.error("httplib.HTTPException = %s: %s" \
+                % (ex.__class__.__name__, ex))
+            raise StorageTemporaryCommunicationException(str(ex))
 
 
     def upload_file(self, remote_file, local_file):
