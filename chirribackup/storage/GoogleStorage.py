@@ -32,6 +32,7 @@ import errno
 import hashlib
 import json
 import os
+import re
 import socket
 from httplib import HTTPException
 
