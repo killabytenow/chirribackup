@@ -141,6 +141,13 @@ class GoogleStorage(chirribackup.storage.BaseStorage.BaseStorage):
                 % (ex.__class__.__name__, ex))
             raise StorageTemporaryCommunicationException(str(ex))
 
+        except errors.HttpError, ex:
+            logger.error("googleapiclient.errors.HttpError = %s" % str(ex))
+            if re.compile("^<HttpError 5[0-9][0-9] .*$").match(str(ex)) is not None:
+                raise StorageTemporaryCommunicationException(str(ex))
+            else:
+                raise StoragePermanentCommunicationException(str(ex))
+
 
     def upload_file(self, remote_file, local_file):
         # calculate md5sum of uploaded file
