@@ -60,12 +60,20 @@ class DbCheck(chirribackup.actions.BaseAction.BaseAction):
         ]
     }
 
+    do_fix_always = {}
+
 
     def do_fix(self, q):
         r = self.fix != 0
 
         if self.fix > 1:
-            r = (chirribackup.input.ask(q, "y", "^[yn]$") == "y")
+            if q in self.do_fix_always:
+                r = True
+            else:
+                a = chirribackup.input.ask(q, "y", "^[yna]$")
+                r = (a == "y" or a == "a")
+                if a == "a":
+                    self.do_fix_always[q] = 1
 
         if r:
             logger.info("Apply '%s'" % q)
@@ -186,7 +194,7 @@ class DbCheck(chirribackup.actions.BaseAction.BaseAction):
                 # 1.4 chunk in disk but already uploaded
                 if chunk.status == 1:
                     logger.error("Chunk %s already uploaded." % chunk.hash_format())
-                    if self.do_fix("Delete chunk"):
+                    if self.do_fix("Delete chunk already uploaded"):
                         os.unlink(fpath)
 
                 # decompress and hash
@@ -219,12 +227,12 @@ class DbCheck(chirribackup.actions.BaseAction.BaseAction):
 
             except ChunkBadFilenameException, ex:
                 logger.error("Bad chunk file name '%s': %s" % (fname, ex))
-                if self.do_fix("Delete file"):
+                if self.do_fix("Delete file with bad chunk name"):
                     os.unlink(fpath)
 
             except ChunkNotFoundException, ex:
                 logger.error("File hash %s does not exists in db" % chunk.hash_format())
-                if self.do_fix("Delete chunk"):
+                if self.do_fix("Delete chunk not found in db"):
                     os.unlink(fpath)
 
         # 2. check that pending chunks are in disk
@@ -292,7 +300,7 @@ class DbCheck(chirribackup.actions.BaseAction.BaseAction):
         if self.ldb.status < 0 \
         or self.ldb.status > 100:
             logger.error("Unknown database status %d." % int(self.ldb.status))
-            if self.do_fix("Fix status"):
+            if self.do_fix("Fix database status"):
                 raise ChirriException("Not implemented.")
 
 
