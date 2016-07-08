@@ -44,7 +44,8 @@ from oauth2client.service_account import ServiceAccountCredentials
 from chirribackup.Logger import logger
 from chirribackup.StringFormat import format_num_bytes
 from chirribackup.exceptions import ChirriException, \
-                                    StorageTemporaryCommunicationException
+                                    StorageTemporaryCommunicationException, \
+                                    StoragePermanentCommunicationException
 import chirribackup.input
 import chirribackup.storage.BaseStorage
 
@@ -162,8 +163,11 @@ class GoogleStorage(chirribackup.storage.BaseStorage.BaseStorage):
         logger.info("Going to upload %s" % (format_num_bytes(size)))
 
         # upload file
-        with open(local_file, "rb") as f:
-            self.__upload_iobase(remote_file, md5sum, f)
+        if size > 0:
+            with open(local_file, "rb") as f:
+                self.__upload_iobase(remote_file, md5sum, f)
+        else:
+            logger.info("File of 0 bytes cannot be uploaded to GCS")
 
 
     def upload_data(self, remote_file, data):
@@ -172,7 +176,10 @@ class GoogleStorage(chirribackup.storage.BaseStorage.BaseStorage):
         logger.info("Going to upload %s" % format_num_bytes(len(data)))
 
         # upload file
-        self.__upload_iobase(remote_file, md5sum, StringIO.StringIO(data))
+        if len(data) > 0:
+            self.__upload_iobase(remote_file, md5sum, StringIO.StringIO(data))
+        else:
+            logger.info("File of 0 bytes cannot be uploaded to GCS")
 
 
     def get_listing(self, path = ""):
