@@ -152,10 +152,11 @@ class Syncer(object):
     def sync_chunks(self):
         logger.info("Syncing chunks")
 
-        # build try list
+        # build list of chunks pending of upload
         try_list = []
         for chunk in chirribackup.chunk.Chunk.list(self.ldb):
-            try_list.append([ chunk, 0 ])
+            if chunk.status == 0:
+                try_list.append([ chunk, 0 ])
 
         # try to upload files
         while len(try_list) > 0:
