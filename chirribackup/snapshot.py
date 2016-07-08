@@ -426,7 +426,8 @@ class Snapshot(object):
                         "snapshot" : self.snapshot_id,
                         "path"     : fr["path"]
                     })
-                if fr["hash"] is not None and fr["hash"] != "":
+                if fr["hash"] is not None \
+                and self.file_ref_type(fr["hash"]) == "regfile":
                     chunk = chirribackup.chunk.Chunk(self.ldb, fr["hash"])
                     chunk.refcount_dec()
 
