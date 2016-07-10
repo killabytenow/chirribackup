@@ -67,9 +67,13 @@ class DbStatus(chirribackup.actions.BaseAction.BaseAction):
             print "      - %s not referenced" % format_num_bytes(counters["chunks_bytes_not_referenced"])
             print "      - %s compressed data (ratio %.2f)" % (
                                 format_num_bytes(counters["chunks_compressed_bytes"]),
-                                (float(counters["chunks_compressed_bytes"]) / float(counters["chunks_bytes"])))
+                                counters["compression_ratio"])
             print "      - %s uploaded" % format_num_bytes(counters["chunks_compressed_bytes_uploaded"])
-            print "      - %s pending upload" % format_num_bytes(counters["chunks_compressed_bytes_pending_upload"])
+            print "      - %s pending upload (estimated size %s)" % (
+                            format_num_bytes(counters["chunks_bytes_pending_upload"]),
+                            format_num_bytes(
+                                counters["chunks_bytes_pending_upload"] \
+                                * counters["compression_ratio"]))
         print "  - %d snapshots in database" % (counters["snapshots"])
 
         if counters["snapshots"] > 0:

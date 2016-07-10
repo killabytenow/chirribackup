@@ -294,9 +294,9 @@ class LocalDatabase(object):
                     "chunks":
                         "SELECT COUNT(*) FROM file_data",
                     "chunks_not_uploaded":
-                        "SELECT COUNT(*) FROM file_data WHERE status = 0",
+                        "SELECT COUNT(*) FROM file_data WHERE status < 2",
                     "chunks_uploaded":
-                        "SELECT COUNT(*) FROM file_data WHERE status = 1",
+                        "SELECT COUNT(*) FROM file_data WHERE status = 2",
                     "chunks_not_referenced":
                         "SELECT COUNT(*) FROM file_data WHERE refcount = 0",
 
@@ -306,9 +306,9 @@ class LocalDatabase(object):
                     "chunks_bytes_not_referenced":
                         "SELECT SUM(size) FROM file_data WHERE refcount = 0",
                     "chunks_bytes_uploaded":
-                        "SELECT SUM(size) FROM file_data WHERE status = 1",
+                        "SELECT SUM(size) FROM file_data WHERE status = 2",
                     "chunks_bytes_pending_upload":
-                        "SELECT SUM(size) FROM file_data WHERE status = 0",
+                        "SELECT SUM(size) FROM file_data WHERE status < 2",
 
                     # chunks' compressed volume count
                     "chunks_compressed_bytes":
@@ -316,9 +316,11 @@ class LocalDatabase(object):
                     "chunks_compressed_bytes_not_referenced":
                         "SELECT SUM(csize) FROM file_data WHERE refcount = 0",
                     "chunks_compressed_bytes_uploaded":
-                        "SELECT SUM(csize) FROM file_data WHERE status = 1",
-                    "chunks_compressed_bytes_pending_upload":
+                        "SELECT SUM(csize) FROM file_data WHERE status = 2",
+                    "chunks_uncompressed_bytes_pending_upload":
                         "SELECT SUM(csize) FROM file_data WHERE status = 0",
+                    "chunks_compressed_bytes_pending_upload":
+                        "SELECT SUM(csize) FROM file_data WHERE status = 1",
 
                     # count snapshots
                     "snapshots":
@@ -340,6 +342,16 @@ class LocalDatabase(object):
                                 GROUP BY snapshot
                             """):
             counters["file_refs"][fr["snapshot"]] = fr["nfr"]
+
+        # some calculus
+        counters["compression_ratio"] = \
+            1.0 if counters["chunks_bytes"] == 0 \
+            else (float(counters["chunks_compressed_bytes"]) \
+                    / float(counters["chunks_bytes"]))
+
+        counters["chunks_bytes_pending_upload"] = \
+                    counters["chunks_uncompressed_bytes_pending_upload"] \
+                    + counters["chunks_compressed_bytes_pending_upload"]
 
         return counters
 
