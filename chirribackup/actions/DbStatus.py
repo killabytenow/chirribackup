@@ -69,6 +69,13 @@ class DbStatus(chirribackup.actions.BaseAction.BaseAction):
                                 format_num_bytes(counters["chunks_compressed_bytes"]),
                                 counters["compression_ratio"])
             print "      - %s uploaded" % format_num_bytes(counters["chunks_compressed_bytes_uploaded"])
+            for c,t in counters["compression"].items():
+                print "            %s: %s => %s (ratio %.2f)" % (
+                            c,
+                            format_num_bytes(t["size"]),
+                            format_num_bytes(t["csize"]),
+                            t["ratio"]
+                        )
             print "      - %s pending upload (estimated size %s)" % (
                             format_num_bytes(counters["chunks_bytes_pending_upload"]),
                             format_num_bytes(

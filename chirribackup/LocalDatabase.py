@@ -335,13 +335,31 @@ class LocalDatabase(object):
                 counters[counter] = 0
 
         counters["file_refs"] = { }
-        c = self.connection.cursor()
-        for fr in c.execute("""
+        for fr in self.connection.execute("""
                                 SELECT snapshot, COUNT(*) as nfr
                                 FROM file_ref
                                 GROUP BY snapshot
                             """):
             counters["file_refs"][fr["snapshot"]] = fr["nfr"]
+
+        # compression by algorithms
+        counters["compression"] = { }
+        for ac in self.connection.execute(
+                        """
+                            SELECT compression,
+                                    SUM(csize) AS csize,
+                                    SUM(size)  AS size
+                            FROM file_data
+                            WHERE status == 2
+                            GROUP BY compression
+                        """):
+            counters["compression"][ac["compression"]] = {
+                    "csize": ac["csize"],
+                    "size":  ac["size"],
+                    "ratio": 1.0 if ac["size"] == 0 \
+                                else (float(ac["csize"]) \
+                                        / float(ac["size"])),
+                }
 
         # some calculus
         counters["compression_ratio"] = \
