@@ -37,7 +37,7 @@ import sqlite3
 
 from chirribackup.exceptions import ChirriException, ConfigNotFoundException
 
-DB_VERSION = 1
+DB_VERSION = 2
 
 class LocalDatabase(object):
 
@@ -122,8 +122,9 @@ class LocalDatabase(object):
         #       recovering in case of a catastrofic event where only some files
         #       can be recovered.
         #   status
-        #        0 - chunk waiting for upload
-        #        1 - uploaded
+        #        0 - chunk waiting for compression & upload
+        #        1 - compressed
+        #        2 - uploaded
         #   refcount
         #       Snapshots referencing to this data.
         #   deleted
@@ -241,7 +242,7 @@ class LocalDatabase(object):
             """)
 
 
-    def __init__(self, path, init = False, storage_type= None):
+    def __init__(self, path, init = False, storage_type = None, db_version_check = True):
         super(LocalDatabase, self).__setattr__('db_path', path)
         self.db_file = os.path.join(path, "__chirri__.db")
         self.chunks_dir = os.path.join(path, "__chunks__")
@@ -269,8 +270,12 @@ class LocalDatabase(object):
                 os.mkdir(self.chunks_dir, 0700)
 
         if self.db_version != DB_VERSION:
-            raise ChirriException("This database (version %d) requires a different version of Chirri Backup." \
-                                    % self.db_version)
+            if db_version_check:
+                raise ChirriException(
+                        "Old database (version %d), expected version %s -- run 'db check'" \
+                        % (self.db_version, DB_VERSION))
+            logger.warning("DETECTED OLD DATABASE VERSION %d, EXPECTED VERSION %d" \
+                    % (self.db_version, DB_VERSION))
 
 
     def snapshot_list(self):

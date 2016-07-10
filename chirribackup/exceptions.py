@@ -85,6 +85,8 @@ class ChunkNotFoundException(ChirriException):
 class ChunkBadHashException(ChirriException):
     pass
 
+class ChunkChangedException(ChirriException):
+    pass
 
 class ChunkBadFilenameException(ChirriException):
     pass

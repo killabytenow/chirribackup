@@ -24,15 +24,15 @@
 # 
 ###############################################################################
 
-from chirribackup.exceptions import ChirriException
 from chirribackup.Config import CONFIG
 from chirribackup.Logger import logger
-import chirribackup.actions.BaseAction
+from chirribackup.exceptions import ChirriException, UnknownParameterException
 import chirribackup.LocalDatabase
-import chirribackup.snapshot
+import chirribackup.actions.BaseAction
 import chirribackup.input
-import sys
+import chirribackup.snapshot
 import re
+import sys
 
 class SnapshotNew(chirribackup.actions.BaseAction.BaseAction):
 
@@ -42,8 +42,10 @@ class SnapshotNew(chirribackup.actions.BaseAction.BaseAction):
             "This action creates a new snapshot database and configures it."
         ],
         "args": [
-            [ "?{base_snapshot_id}",
-                "A snapshot_id for using as base snapshot (inc backup).",
+            [ "?({base_snapshot_id}|inc|incremental)",
+                "A snapshot_id for using as base snapshot (incremental",
+                "backup). If keywords 'inc' or 'incremental', the last",
+                "snapshot_id will be used as base snapshot",
             ]
         ]
     }
@@ -51,8 +53,17 @@ class SnapshotNew(chirribackup.actions.BaseAction.BaseAction):
 
     def parse_args(self, argv):
         r = {}
+
         if len(argv) > 0:
-            r["base_snapshot_id"] = int(argv.pop(0))
+            r["base_snapshot_id"] = argv.pop(0)
+            if r["base_snapshot_id"].lower() == "inc" \
+            or r["base_snapshot_id"].lower() == "incremental":
+                raise ChirriException("TODO")
+            elif re.compile("^([1-9][0-9]*|0)$").match(r["base_snapshot_id"]):
+                r["base_snapshot_id"] = int(r["base_snapshot_id"])
+            else:
+                raise UnknownParameterException("Bad base_snapshot_id '%s'." % r["base_snapshot_id"])
+
         return r
 
 
@@ -60,6 +71,12 @@ class SnapshotNew(chirribackup.actions.BaseAction.BaseAction):
         self.ldb = chirribackup.LocalDatabase.LocalDatabase(CONFIG.path)
 
         if base_snapshot_id is not None:
+            if base_snapshot_id == "inc" \
+            or base_snapshot_id == "incremental":
+                raise ChirriException("TODO")
+            else:
+                base_snapshot_id = int(base_snapshot_id)
+
             logger.info("Creating incremental snapshot based on %d" % base_snapshot_id)
         else:
             logger.info("Creating new snapshot from scratch")

@@ -152,7 +152,7 @@ class DbCheck(chirribackup.actions.BaseAction.BaseAction):
                         self.ldb.connection.commit()
 
             # 5. 0 <= status <= 1
-            if chunk.status < 0 or chunk.status > 1:
+            if chunk.status < 0 or chunk.status > 2:
                 raise ChirriException("Not implemented.")
                 # i dont know what to do here
 
@@ -180,6 +180,9 @@ class DbCheck(chirribackup.actions.BaseAction.BaseAction):
         # 1. chunks in disk are referenced by local database?
         for fname in os.listdir(os.path.realpath(self.ldb.chunks_dir)):
             try:
+                # set 'fpath' initially with the only date we have
+                fpath = os.path.realpath(os.path.join(self.ldb.chunks_dir, fname))
+
                 # 1.1 Good file name
                 cbi = chirribackup.chunk.Chunk.parse_filename(fname)
 
@@ -192,13 +195,15 @@ class DbCheck(chirribackup.actions.BaseAction.BaseAction):
                     raise ChirriException("cbi does not match -- Not implemented.")
 
                 # 1.4 chunk in disk but already uploaded
-                if chunk.status == 1:
+                if chunk.status == 2:
                     logger.error("Chunk %s already uploaded." % chunk.hash_format())
                     if self.do_fix("Delete chunk already uploaded"):
                         os.unlink(fpath)
 
-                # decompress and hash
+                # set 'fpath' again, using this time the chunk() object info
                 fpath = os.path.realpath(os.path.join(self.ldb.chunks_dir, chunk.get_filename()))
+
+                # decompress and hash
                 try:
                     h = chirribackup.crypto.ChirriHasher.hash_file(
                                 fpath,
@@ -226,17 +231,18 @@ class DbCheck(chirribackup.actions.BaseAction.BaseAction):
                         raise ChirriException("Not implemented.")
 
             except ChunkBadFilenameException, ex:
-                logger.error("Bad chunk file name '%s': %s" % (fname, ex))
+                logger.error("Bad chunk file name '%s': %s" % (fpath, ex))
                 if self.do_fix("Delete file with bad chunk name"):
                     os.unlink(fpath)
 
             except ChunkNotFoundException, ex:
-                logger.error("File hash %s does not exists in db" % chunk.hash_format())
+                logger.error("File hash %s does not exists in db" % fpath)
                 if self.do_fix("Delete chunk not found in db"):
                     os.unlink(fpath)
 
         # 2. check that pending chunks are in disk
-        for chunk in chirribackup.chunk.Chunk.list(self.ldb, status = 0):
+        for chunk in chirribackup.chunk.Chunk.list(self.ldb, status = 0) \
+                   + chirribackup.chunk.Chunk.list(self.ldb, status = 1):
             fpath = os.path.realpath(os.path.join(self.ldb.chunks_dir, chunk.get_filename()))
             if not os.path.exists(fpath):
                 logger.error("Not uploaded chunk %s referenced, but not found in __chunks__" \
@@ -288,7 +294,7 @@ class DbCheck(chirribackup.actions.BaseAction.BaseAction):
         if column_snapshots_uploaded_tstamp_exists:
             # XXX: sqlite3 does not support ALTER TABLE DROP COLUMN, so we do
             # not do nothing here. It is only an unused column in a local
-            # database, we can cope with some little anoying bytes.
+            # database; we can cope with some little anoying bytes.
             #logger.warning("Delete unused column snapshots.uploaded_tstamp")
             #self.ldb.connection.execute("ALTER TABLE snapshots DROP COLUMN uploaded_tstamp")
             #self.ldb.connection.commit()
@@ -302,6 +308,24 @@ class DbCheck(chirribackup.actions.BaseAction.BaseAction):
             logger.error("Unknown database status %d." % int(self.ldb.status))
             if self.do_fix("Fix database status"):
                 raise ChirriException("Not implemented.")
+
+        # upgrading from db_version 1 to db_version 2
+        if self.ldb.db_version == 1:
+            if not self.do_fix("Upgrade database to version 2"):
+                raise ChirriException("Cannot continue without upgrading database")
+
+            # Added chunk status 1 => already choosen best compression algorithm
+            #   (we move all chunks to state 2)
+            self.ldb.connection.execute(
+                """
+                    UPDATE file_data
+                    SET status = 2
+                    WHERE status == 1
+                """)
+
+            # upgrade database
+            self.ldb.db_version = 2
+            self.ldb.connection.commit()
 
 
     def check_exclude(self):
@@ -359,7 +383,7 @@ class DbCheck(chirribackup.actions.BaseAction.BaseAction):
     def go(self, fix_level):
         self.fix = fix_level
 
-        self.ldb = chirribackup.LocalDatabase.LocalDatabase(CONFIG.path)
+        self.ldb = chirribackup.LocalDatabase.LocalDatabase(CONFIG.path, db_version_check = False)
 
         self.check_db()
         self.check_snapshots()

@@ -28,6 +28,7 @@ from __future__ import absolute_import
 import exceptions
 import os
 import re
+import sys
 
 import chirribackup.compression
 import chirribackup.crypto
@@ -78,13 +79,59 @@ class Chunk(object):
         return self
 
 
-    def new(self, source_file, compression):
+    def new(self, source_file):
         # local_file (source_file in ldb.db_path)
         local_file = os.path.join(self.ldb.db_path, source_file)
         tmp_file = os.path.join(self.ldb.chunks_dir, "tmp.%s" % os.getpid())
 
-        # create snapshot (while hashing and compressing)
-        compressor = chirribackup.compression.Compressor(compression, tmp_file)
+        # hash target file
+        sh = chirribackup.crypto.ChirriHasher()
+        try:
+            with open(local_file, 'rb') as ifile:
+                buf = ifile.read(READ_BLOCKSIZE)
+                while len(buf) > 0:
+                    sh.update(buf)
+                    buf = ifile.read(READ_BLOCKSIZE)
+
+        except exceptions.IOError, ex:
+            raise ChirriException("Cannot hash file '%s': %s" % (source_file, ex))
+
+        # set basic attribs
+        self.hash          = sh.hash
+        self.size          = sh.nbytes
+        self.csize         = None
+        self.first_seen_as = source_file
+        self.status        = 0
+        self.refcount      = 0
+        self.compression   = None
+
+        # configure target_file path
+        target_file = os.path.join(self.ldb.chunks_dir, self.get_filename())
+
+        # check if this chunk exists already in local database
+        oc = self.ldb.connection.execute(
+                    "SELECT * FROM file_data WHERE hash = :hashkey",
+                    { "hashkey" : sh.hash }).fetchone()
+        if oc is not None:
+            # check the improbability
+            if sh.nbytes != oc["size"]:
+                raise ChirriException("OMG! File '%s' matches with chunk %s, but it differs in size."
+                                        % (target_file, self.hash_format()))
+
+            # hash already processed, load and return
+            logger.debug("Chunk %s already exists for file %s" \
+                                % (self.hash_format(), source_file))
+            return self.load(sh.hash)
+
+        # if the target_file already exists (was generated, but not reg in db),
+        # delete it
+        if os.path.exists(target_file):
+            logger.warning("A local chunk '%s' was already created -- deleting it." \
+                            % self.hash_format())
+            os.unlink(target_file)
+
+        # create the file snapshot 'target_file' (without compression)
+        compressor = chirribackup.compression.Compressor(None, tmp_file)
         sh = chirribackup.crypto.ChirriHasher()
         try:
             with open(local_file, 'rb') as ifile:
@@ -99,96 +146,140 @@ class Chunk(object):
             os.unlink(tmp_file)
             raise ChirriException("Cannot hash & copy file '%s': %s" % (source_file, ex))
 
-        if compressor.bytes_out > sh.nbytes:
-            # omg ... compressed data is bigger than uncompressed
-            # rollback and copy file
-            if sh.nbytes == 0:
-                logger.warning("Found zero bytes file '%s'." % source_file)
-            else:
-                logger.warning("Storing '%s' uncompressed (uncompressed=%d < %s=%d; ratio %.2f)" \
-                            % (source_file,
-                               sh.nbytes,
-                               compression, compressor.bytes_out,
-                               float(compressor.bytes_out) / float(sh.nbytes)))
-            os.unlink(tmp_file)
-            return self.new(source_file, None)
+        # check hash and update csize
+        if sh.hash != self.hash or sh.nbytes != self.size:
+            raise ChunkChangedException("Chunk %s changed during snapshot" % source_file)
+        if sh.nbytes != compressor.bytes_out:
+            raise ChirriException(
+                    "Null compressor bytes %d do not match with hash bytes %d" \
+                        % (compressor.bytes_out, sh.nbytes))
+        self.csize = compressor.bytes_out
 
-        # set basic attribs
-        self.hash          = sh.hash
-        self.size          = sh.nbytes
-        self.csize         = compressor.bytes_out
-        self.first_seen_as = source_file
-        self.status        = 0
-        self.refcount      = 0
-        self.compression   = compression
-
-        # configure target_file path
-        target_file = os.path.join(self.ldb.chunks_dir, self.get_filename())
-
-        # check if this chunk exists already in local database
-        oc = self.ldb.connection.execute(
-                    "SELECT * FROM file_data WHERE hash = :hashkey",
-                    { "hashkey" : sh.hash }).fetchone()
-        if oc is not None:
-            # remove the tmp_file ... we dont need it anymore
-            os.unlink(tmp_file)
-
-            # check the improbability
-            if sh.nbytes != oc["size"]:
-                raise ChirriException("OMG! File '%s' matches with chunk %s, but it differs in size."
-                                        % (target_file, self.hash_format()))
-
-            # hash already processed, load and return
-            return self.load(sh.hash)
-
-        # commit the target_file
-        if os.path.exists(target_file):
-            try:
-                # hash found file
-                decompressor = chirribackup.compression.Decompressor(compression)
-                eh = chirribackup.crypto.ChirriHasher()
-                with open(target_file, 'rb') as ifile:
-                    buf = ifile.read(READ_BLOCKSIZE)
-                    while len(buf) > 0:
-                        eh.update(decompressor.decompress(buf))
-                        buf = ifile.read(READ_BLOCKSIZE)
-                    eh.update(decompressor.close())
-
-                if sh.hash != eh.hash:
-                    logger.warning("Target file '%s' exists but differs of '%s' -- deleting target" \
-                                            % (target_file, source_file))
-                    os.unlink(target_file)
-                    os.rename(tmp_file, target_file)
-                else:
-                    # check the improbability
-                    if sh.nbytes != eh.nbytes:
-                        raise ChirriException("OMG! Target file '%s' exists, with same hash of '%s', but differs in size." \
-                                                % (target_file, source_file))
-                    logger.warning("Local chunk '%s' already exists." % self.hash_format())
-                    # use the existing chunk snapshot -- it is already there
-                    os.unlink(tmp_file)
-            except exceptions.IOError, ex:
-                logger.warning("Target file '%s', and cannot read: %s" \
-                                    % (target_file, ex))
-                os.unlink(target_file)
-        else:
-                os.rename(tmp_file, target_file)
-
-        # okay... now register chunk in database
+        # commit target_file and register chunk in database
+        os.rename(tmp_file, target_file)
         self.ldb.connection.execute(
                 """
                     INSERT INTO file_data
                         (hash, size, csize, first_seen_as, status, refcount, compression)
-                        VALUES (:hash, :size, :csize, :path, 0, 0, :compression)
+                        VALUES (:hash, :size, :csize, :path, :status, 0, :compression)
                 """, {
                     "hash"        : self.hash,
                     "size"        : self.size,
                     "csize"       : self.csize,
                     "path"        : self.first_seen_as,
+                    "status"      : self.status,
                     "compression" : self.compression,
                 })
 
         return self
+
+
+    def compress(self, compression):
+        # sanity checks
+        if self.status != 0:
+            raise ChirriException(
+                    "Chunk cannot be compressed in status %d" % self.status)
+
+        # trivial case => user do not want compression
+        if compression is None \
+        or compression == self.compression:
+            # leave chunk in the current state (probably uncompressed)
+            logger.debug("%s: %s, not applying compression %s." \
+                % (self.get_filename(),
+                   ("Compressed with " + self.compression) \
+                       if self.compression is not None else "Uncompressed",
+                   "NONE" if compression is None else compression))
+            return False
+
+        # get paths
+        old_chunk_file = os.path.join(self.ldb.chunks_dir, self.get_filename())
+        tmp_file = os.path.join(self.ldb.chunks_dir, "tmp.%s" % os.getpid())
+
+        # try compressing it using 'compression' algorithm
+        # NOTE: we must decompress the existing chunk using the current
+        #       compression algorithm (probably None)
+        decompressor = chirribackup.compression.Decompressor(self.compression)
+        compressor = chirribackup.compression.Compressor(compression, tmp_file)
+        sh = chirribackup.crypto.ChirriHasher()
+        try:
+            # read, write & hash
+            with open(old_chunk_file, 'rb') as ifile:
+                # read first block
+                buf = ifile.read(READ_BLOCKSIZE)
+                while len(buf) > 0:
+                    # decompress data
+                    buf = decompressor.decompress(buf)
+
+                    # compress data & hash
+                    compressor.compress(buf)
+                    sh.update(buf)
+
+                    # read more data
+                    buf = ifile.read(READ_BLOCKSIZE)
+
+                # last pending bytes
+                buf = decompressor.close()
+                compressor.compress(buf)
+                sh.update(buf)
+                compressor.close()
+
+        except exceptions.IOError, ex:
+            os.unlink(tmp_file)
+            raise ChirriException("Cannot recompress chunk %s: %s" \
+                                    % (self.hash_format(), ex))
+
+        # check hashes
+        if sh.hash != self.hash:
+            os.unlink(tmp_file)
+            raise ChirriException(
+                    "Data in file '%s' does not match with chunk %s" \
+                        % (sh.hash, self.hash))
+
+        # check if compression has worked
+        if compressor.bytes_out >= self.csize:
+            if self.csize == 0:
+                logger.warning("Found zero bytes chunk '%s'." % self.hash_format())
+            else:
+                logger.warning("Storing '%s' uncompressed (uncompressed=%d < %s=%d; ratio %.2f)" \
+                            % (self.hash_format(),
+                               self.csize,
+                               compression, compressor.bytes_out,
+                               float(compressor.bytes_out) / float(self.csize)))
+            os.unlink(tmp_file)
+            sys.exit(1)
+            return False
+
+        # ok .. proceed to update chunk with compressed version
+        # update chunk info
+        logger.debug("Chunk %s compressed (%d < %d)" \
+                % (self.hash_format(), compressor.bytes_out, self.csize))
+        self.compression = compression
+        self.csize = compressor.bytes_out
+        self.ldb.connection.execute(
+            """
+                UPDATE file_data
+                SET compression = :compression, csize = :csize
+                WHERE hash = :hash
+            """, {
+                "compression" : self.compression,
+                "csize"       : self.csize,
+                "hash"        : self.hash,
+            })
+
+        # calculate new file name
+        new_chunk_file = os.path.join(self.ldb.chunks_dir, self.get_filename())
+
+        # rename tmp_file
+        if os.path.exists(new_chunk_file):
+            logger.warning("A local chunk '%s' was already created -- deleting it." \
+                            % self.hash_format())
+            os.unlink(new_chunk_file)
+        os.rename(tmp_file, new_chunk_file)
+        self.ldb.connection.commit()
+        os.unlink(old_chunk_file)
+
+        return True
+
 
 
     def download(self, sm, target_file, overwrite = False):
@@ -272,8 +363,9 @@ class Chunk(object):
 
 
     def set_status(self, value):
-        if value < 0 or value > 1:
+        if value < 0 or value > 2:
             raise BadValueException("Bad chunk status value %s" % value)
+        self.status = value;
         self.ldb.connection.execute(
             """
                 UPDATE file_data

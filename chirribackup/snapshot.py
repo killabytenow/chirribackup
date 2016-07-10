@@ -31,6 +31,7 @@ import re
 import shutil
 import stat
 import time
+import sys
 
 import chirribackup.chunk
 import chirribackup.crypto
@@ -88,6 +89,7 @@ class Snapshot(object):
 
         # copy base snapshot
         if base_snapshot_id is not None:
+            logger.info("Copying data from base snapshot %d" % base_snapshot_id)
             if self.ldb.connection.execute("SELECT * FROM snapshots WHERE snapshot = :id",
                         { "id": base_snapshot_id }).fetchone() is None:
                 raise ChirriException("Snapshot '%d' does not exists." % base_snapshot_id)
@@ -241,18 +243,20 @@ class Snapshot(object):
             and hash_or_type != f["hash"]:
                 touched = True
 
-            # if any file/dir/symlink attribute has changed, then update it and
-            # ask for rehashing if it is a regular file (an
+            # if a permission attribute has changed, then
+            #   - update it with v[1],
+            #   - if v[0] == true:
+            #         then ask for rehashing
+            #         else do not ask for rehashing
             for k,v in ({
-                            "size"  : size,
-                            "perm"  : perm,
-                            "uid"   : uid,
-                            "gid"   : gid,
-                            "mtime" : mtime,
+                            "perm"  : [ False, perm  ],
+                            "uid"   : [ False, uid   ],
+                            "gid"   : [ False, gid   ],
+                            "size"  : [ True,  size  ],
+                            "mtime" : [ True,  mtime ],
                         }).items():
-                if(f[k] != v):
-                    logger.debug("[UPD] %s (%s = %s)" % (path, k, v))
-                    touched = True
+                if(f[k] != v[1]):
+                    touched = touched or v[0]
                     c.execute(
                         """
                             UPDATE file_ref SET %s = :val
@@ -260,9 +264,10 @@ class Snapshot(object):
                         """ % k, {
                             "snapshot" : self.snapshot_id,
                             "path"     : path,
-                            "hash"     : hash_or_type,
-                            "val"      : v
+                            "val"      : v[1]
                         })
+                    logger.debug("[UPD] %s (new(%s): %s; old: %s; touched = %s)" \
+                                % (path, k, v[1], f[k], touched))
 
             # if needs update, then update hash
             if touched:
@@ -449,15 +454,15 @@ class Snapshot(object):
                 # do snapshot and calc hash
                 c = chirribackup.chunk.Chunk(self.ldb)
                 try:
+                    # make a snapshot of file
+                    # NOTE: by default because performance we do not ask for
+                    #       any compression for the associated chunk...
+                    #       compression will be performed during syncing
                     logger.info("snapshot of '%s'" % fr["path"])
-                    c.new(fr["path"], self.ldb.compression)
+                    c.new(fr["path"])
 
                     # snapshot succesful: register reference and update
                     # chunk ref counter
-                    logger.debug2("%s: %s (%d)"
-                                    % (fr["path"],
-                                       self.file_ref_format(c.hash),
-                                       c.size))
                     c.refcount_inc()
                 except chirribackup, ex:
                     # snapshot failed: tag file_ref as failed

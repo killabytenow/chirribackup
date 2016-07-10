@@ -62,10 +62,7 @@ class Syncer(object):
                     # uploaded snapshot marked for deletion
                     #   => delete remote snapshot
                     logger.info("[DEL] Remote snapshot %d" % snp.snapshot_id)
-                    target_file = "snapshots/snapshot-%d.txt" % snp.snapshot_id
-                    if snp.compression is not None:
-                        target_file += "." + snp.compression
-                    self.sm.delete_file(target_file)
+                    self.sm.delete_file("snapshots/%s" % snp.get_filename())
                 else:
                     logger.info("[DEL] Local snapshot %d" % snp.snapshot_id)
 
@@ -107,44 +104,58 @@ class Syncer(object):
 
 
     def sync_chunk(self, chunk):
-        local_chunk = os.path.realpath(os.path.join(self.ldb.chunks_dir, chunk.get_filename()))
-        remote_chunk = "chunks/%s" % chunk.get_filename()
+        while True:
+            # get paths
+            local_chunk = os.path.realpath(os.path.join(self.ldb.chunks_dir, chunk.get_filename()))
+            remote_chunk = "chunks/%s" % chunk.get_filename()
 
-        if chunk.status == 0:
-            # not uploaded chunk...
-            if chunk.refcount > 0:
-                # referenced chunk, not uploaded => upload
-                try:
-                    self.sm.upload_file(remote_chunk, local_chunk)
-                    chunk.set_status(1)
-                    # NOTE: this commit is important: sets file as uploaded, then
-                    # after the local chunk may be unlinked.
-                    self.ldb.connection.commit()
+            if chunk.status == 0:
+                # try to compress chunk and confirm compression algorithm
+                if chunk.compress(self.ldb.compression):
+                    logger.info("%s: compressed with %s (%d => %d; ratio %.2f)" \
+                        % (chunk.hash_format(),
+                           chunk.compression,
+                           chunk.size,
+                           chunk.csize,
+                           (float(chunk.csize) / float(chunk.size)) \
+                            if chunk.size > 0 else float('NaN')))
+                chunk.set_status(1)
+                self.ldb.connection.commit()
+
+            elif chunk.status == 1:
+                # not uploaded chunk...
+                if chunk.refcount > 0:
+                    logger.info("%s: uploading" % chunk.hash_format())
+                    # referenced chunk, not uploaded => upload
+                    try:
+                        self.sm.upload_file(remote_chunk, local_chunk)
+                        chunk.set_status(2)
+                        # NOTE: this commit is important: sets file as uploaded, then
+                        # after the local chunk may be unlinked.
+                        self.ldb.connection.commit()
+                        os.unlink(local_chunk)
+                        self.counters["bytes"]  += chunk.size
+                        self.counters["chunks"] += 1
+                        self.counters["files"]  += 1
+                    except StorageTemporaryCommunicationException, ex:
+                        logger.error("Temporary error when uploading %s (%s): %s" \
+                                        % (chunk.hash_format(), chunk.first_seen_as, ex))
+                        return False
+                else:
+                    # not referenced chunk, not uploaded => local delete
+                    logger.info("%s: deleting not-referenced local chunk" % chunk.hash_format())
                     os.unlink(local_chunk)
-                    self.counters["bytes"]  += chunk.size
-                    self.counters["chunks"] += 1
-                    self.counters["files"]  += 1
-                    logger.info("[UPD] %s" % chunk.hash_format())
-                except StorageTemporaryCommunicationException, ex:
-                    logger.error("Temporary error when uploading %s (%s): %s" \
-                                    % (chunk.hash_format(), chunk.first_seen_as, ex))
-                    return False
-            else:
-                # not referenced chunk, not uploaded => local delete
-                logger.info("[LDL] Deleting pending chunk %s" % chunk.hash_format())
-                os.unlink(local_chunk)
-                chunk.destroy()
-        elif chunk.refcount == 0:
-            # uploaded chunk not referenced => delete from server
-            logger.warning("[DEL] Remote chunk %s." % chunk.hash_format())
-            self.sm.delete_file(remote_chunk)
-            chunk.destroy()
-        else:
-            # optimization: avoids execution of a meaningless commit
-            return True
+                    chunk.destroy()
+                    self.ldb.connection.commit()
 
-        # commit on each operation
-        self.ldb.connection.commit()
+            elif chunk.refcount == 0:
+                # uploaded chunk not referenced => delete from server
+                logger.warning("%s: deleting not-referenced REMOTE chunk" % chunk.hash_format())
+                self.sm.delete_file(remote_chunk)
+                chunk.destroy()
+            else:
+                # optimization: avoids execution of a meaningless commit
+                return True
 
         return True
 
@@ -152,11 +163,11 @@ class Syncer(object):
     def sync_chunks(self):
         logger.info("Syncing chunks")
 
-        # build list of chunks pending of upload
+        # build list of chunks not uploaded yet
         try_list = []
-        for chunk in chirribackup.chunk.Chunk.list(self.ldb):
-            if chunk.status == 0:
-                try_list.append([ chunk, 0 ])
+        for chunk in chirribackup.chunk.Chunk.list(self.ldb, status = 1) \
+                   + chirribackup.chunk.Chunk.list(self.ldb, status = 0):
+            try_list.append([ chunk, 0 ])
 
         # try to upload files
         while len(try_list) > 0:
