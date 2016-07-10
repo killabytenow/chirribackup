@@ -246,7 +246,6 @@ class Chunk(object):
                                compression, compressor.bytes_out,
                                float(compressor.bytes_out) / float(self.csize)))
             os.unlink(tmp_file)
-            sys.exit(1)
             return False
 
         # ok .. proceed to update chunk with compressed version
