@@ -266,8 +266,6 @@ class LocalDatabase(object):
 
         if init:
             self.__create_tables(storage_type)
-            if not os.path.exists(self.chunks_dir):
-                os.mkdir(self.chunks_dir, 0700)
 
         if self.db_version != DB_VERSION:
             if db_version_check:
@@ -276,6 +274,10 @@ class LocalDatabase(object):
                         % (self.db_version, DB_VERSION))
             logger.warning("DETECTED OLD DATABASE VERSION %d, EXPECTED VERSION %d" \
                     % (self.db_version, DB_VERSION))
+
+        # chunks directory should always exist...
+        if not os.path.exists(self.chunks_dir):
+            os.mkdir(self.chunks_dir, 0700)
 
 
     def snapshot_list(self):
