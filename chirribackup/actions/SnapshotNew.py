@@ -58,7 +58,7 @@ class SnapshotNew(chirribackup.actions.BaseAction.BaseAction):
             r["base_snapshot_id"] = argv.pop(0)
             if r["base_snapshot_id"].lower() == "inc" \
             or r["base_snapshot_id"].lower() == "incremental":
-                raise ChirriException("TODO")
+                r["base_snapshot_id"] = "incremental"
             elif re.compile("^([1-9][0-9]*|0)$").match(r["base_snapshot_id"]):
                 r["base_snapshot_id"] = int(r["base_snapshot_id"])
             else:
@@ -71,12 +71,11 @@ class SnapshotNew(chirribackup.actions.BaseAction.BaseAction):
         self.ldb = chirribackup.LocalDatabase.LocalDatabase(CONFIG.path)
 
         if base_snapshot_id is not None:
-            if base_snapshot_id == "inc" \
-            or base_snapshot_id == "incremental":
-                raise ChirriException("TODO")
+            if base_snapshot_id == "incremental":
+                # load last snapshot and get its id
+                base_snapshot_id = chirribackup.snapshot.Snapshot(self.ldb).load().snapshot_id
             else:
                 base_snapshot_id = int(base_snapshot_id)
-
             logger.info("Creating incremental snapshot based on %d" % base_snapshot_id)
         else:
             logger.info("Creating new snapshot from scratch")

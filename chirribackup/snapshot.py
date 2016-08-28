@@ -102,13 +102,28 @@ class Snapshot(object):
         return self
 
 
-    def load(self, snapshot_id):
+    def load(self, snapshot_id = None):
+        # if snapshot_id not declared, load last snapshot with status 4 or 5
+        if snapshot_id is None:
+            row = self.ldb.connection.execute(
+                    """
+                        SELECT MAX(snapshot) AS last_snapshot_id
+                        FROM snapshots
+                        WHERE status >= 4
+                            AND deleted = 0
+                    """).fetchone()
+            if row is None:
+                raise ChirriException("There is not any previous snapshot completed.")
+            snapshot_id = int(row["last_snapshot_id"])
+
+        # load snapshot info from db
         row = self.ldb.connection.execute(
                     "SELECT * FROM snapshots WHERE snapshot = :snapshot_id",
                     { "snapshot_id" : snapshot_id }).fetchone()
         if row is None:
             raise ChirriException("Snapshot '%d' does not exists." % snapshot_id)
 
+        # populate snapshot object fields
         self.snapshot_id     = row["snapshot"]
         self.status          = row["status"]
         self.deleted         = row["deleted"]
@@ -116,6 +131,7 @@ class Snapshot(object):
         self.finished_tstamp = row["finished_tstamp"]
         self.signed_tstamp   = row["signed_tstamp"]
         self.compression     = row["compression"]
+
         return self
 
 
