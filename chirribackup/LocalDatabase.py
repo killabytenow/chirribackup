@@ -102,7 +102,7 @@ class LocalDatabase(object):
                 CREATE TABLE IF NOT EXISTS status (
                     key             TEXT PRIMARY KEY,
                     save            INTEGER NOT NULL,
-                    type            VARCHAR(8) NOT NULL CHECK (type = "int" OR type = "str"),
+                    type            VARCHAR(8) NOT NULL CHECK (type = "int" OR type = "str" OR type = "bool"),
                     value           TEXT
                 )''')
         for k,v in status_keys.items():
@@ -405,12 +405,38 @@ class LocalDatabase(object):
         return status
 
 
-    def config_attrib_new(self, key, save, type, value):
-        try:
-            if value is not None and type == "int":
-                int(value)
-        except ValueError, ex:
-            raise AttributeError("attribute %s requires None or int value (value = %s)." % (key, value))
+    def config_attrib_check_and_fix(self, entry_type, key, value):
+        if entry_type == "int":
+            try:
+                if value is not None:
+                    int(value)
+            except ValueError, ex:
+                raise AttributeError("attribute %s requires None or int value (value = %s)." % (key, value))
+
+            value = str(value)
+
+        elif entry_type == "bool":
+            if re.compile("^(y(es)?|true)$", re.IGNORECASE).match(str(value)):
+                value = "true"
+            elif re.compile("^(no?|false)$", re.IGNORECASE).match(str(value)):
+                value = "false"
+            else:
+                raise AttributeError("attribute %s requires true or false value (value = %s)." % (key, value))
+
+        elif entry_type == "str":
+            """everything ok"""
+
+        else:
+            raise AttributeError("attribute %s has unknown type %s" % (key, entry_type))
+
+        return value
+
+    def config_attrib_new(self, key, save, entry_type, value):
+        if self.connection is None:
+            raise ChirriException("Database not connected. Cannot write attribute '%s' in %s object" \
+                                            % (key, self.__class__.__name__))
+        value = self.config_attrib_check_and_fix(entry_type, key, value)
+
         self.connection.execute(
             """
                 INSERT INTO status
@@ -419,7 +445,7 @@ class LocalDatabase(object):
             """, {
                 "key"   : key,
                 "save"  : save,
-                "type"  : type,
+                "type"  : entry_type,
                 "value" : value,
             });
 
@@ -434,11 +460,7 @@ class LocalDatabase(object):
             if ra is None:
                 raise AttributeError("%s object has no %r attribute" \
                                         % (self.__class__.__name__, key))
-            try:
-                if value is not None and ra["type"] == "int":
-                    int(value)
-            except ValueError, ex:
-                raise AttributeError("attribute %s requires None or int value (value = %s)." % (key, value))
+            value = self.config_attrib_check_and_fix(ra["type"], key, value)
             c = self.connection.execute(
                     """
                         UPDATE status
@@ -468,6 +490,13 @@ class LocalDatabase(object):
             return None
         if ra["type"] == "int":
             return int(ra["value"])
+        if ra["type"] == "bool":
+            if ra["value"] == "true":
+                return True;
+            if ra["value"] == "false":
+                return False;
+            raise ChirriException("Bad value '%s' for boolean in status key '%s'." \
+                                    % (ra["value"], key))
         if ra["type"] == "str":
             return ra["value"]
         raise ChirriException("Unknown type '%s' in status key '%s'." % (ra["type"], key))

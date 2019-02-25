@@ -36,7 +36,7 @@ import sys
 import chirribackup.chunk
 import chirribackup.crypto
 from chirribackup.Logger import logger
-from chirribackup.exceptions import ChirriException
+from chirribackup.exceptions import ChirriException, ChunkNotFoundException
 
 
 class Snapshot(object):
@@ -112,7 +112,7 @@ class Snapshot(object):
                         WHERE status >= 4
                             AND deleted = 0
                     """).fetchone()
-            if row is None:
+            if row is None or row["last_snapshot_id"] is None:
                 raise ChirriException("There is not any previous snapshot completed.")
             snapshot_id = int(row["last_snapshot_id"])
 
@@ -166,6 +166,8 @@ class Snapshot(object):
     def file_ref_type(self, hash_ref):
         if hash_ref is None:
             return "regfile"
+        if hash_ref == "lost":
+            return "lost"
         if hash_ref == "dir":
             return "dir"
         if hash_ref.startswith("symlink:"):
@@ -310,8 +312,19 @@ class Snapshot(object):
 
         # update refcount
         if hash_or_type is not None and self.file_ref_type(hash_or_type) == "regfile":
-            chunk = chirribackup.chunk.Chunk(self.ldb, hash_or_type)
-            chunk.refcount_inc()
+            try:
+                chunk = chirribackup.chunk.Chunk(self.ldb, hash_or_type)
+                chunk.refcount_inc()
+            except ChunkNotFoundException, ex:
+                logger.error("chunk '%s' not found for file '%s' -- MARKED AS LOST" % (hash_or_type, path))
+                c.execute(
+                    """
+                        UPDATE file_ref SET hash = 'lost', status = -1
+                        WHERE snapshot = :snapshot AND path = :path
+                    """, {
+                        "snapshot" : self.snapshot_id,
+                        "path"     : path,
+                    })
 
 
     def run_discover_files(self, target_path = "."):
@@ -653,6 +666,7 @@ class Snapshot(object):
             r = {}
             for i in range(0, len(headers)):
                 if l[i] != "":
+                    #r[headers[i]] = l[i].decode("string_escape").decode('utf-8')
                     r[headers[i]] = l[i].decode("string_escape")
             d["refs"].append(r)
         return d
@@ -660,14 +674,19 @@ class Snapshot(object):
             
     def desc_parse(self, desc):
         # unprotect
+        logger.debug("unprotecting snapshot description")
         desc = chirribackup.crypto.unprotect_string(desc)
 
         # try with json decoder
+        logger.debug("trying to decode snapshot description...")
         d = self.__desc_parse_json(desc)
 
         # try with CSV decoder
         if d is None:
             d = self.__desc_parse_csv(desc)
+            logger.debug(" >> decoded as csv")
+        else:
+            logger.debug(" >> decoded as json")
 
         # if we cannot decode this throw an exception
         if d is None:
@@ -687,7 +706,7 @@ class Snapshot(object):
         for r in d["refs"]:
             for f,dv in d["default"].iteritems():
                 if f not in r:
-                    #logger.warning("adding %s(%s) in %s" % (f,dv,r))
+                    #logger.debug2("  >> adding %s(%s) in %s" % (f, dv, r))
                     r[f] = dv
         return d
 
@@ -705,8 +724,8 @@ class Snapshot(object):
             self.set_attribute(a, d["details"][a])
         for fr in d["refs"]:
             self.file_ref_save(
-                    fr["path"].encode('utf-8'),
-                    fr["hash"].encode('utf-8'),
+                    fr["path"],
+                    fr["hash"],
                     int(fr["size"]),
                     int(fr["perm"]),
                     int(fr["uid"]),
@@ -890,6 +909,9 @@ class Snapshot(object):
         dl = {}
         for r in self.refs():
             # only regular files are processed in this loop
+            if self.file_ref_type(r["hash"]) == "lost":
+                logger.error("File '%s' is lost" % r["path"])
+
             if self.file_ref_type(r["hash"]) != "regfile":
                 continue
 
@@ -897,8 +919,8 @@ class Snapshot(object):
             # match with the chunk's hash
             target_file = os.path.join(target_path, r["path"])
             if os.path.exists(target_file):
-                hot = chirribackup.crypto.hash_file(target_file)
-                if hot["hex"] == r["hash"]:
+                hot = chirribackup.crypto.ChirriHasher.hash_file(target_file)
+                if hot.hash == r["hash"]:
                     # target file matches... don't add to the download queue
                     logger.info("File '%s' already downloaded." % r["path"])
                     continue
@@ -948,7 +970,13 @@ class Snapshot(object):
                     shutil.copyfile(target_chunk, target_file)
                 os.utime(target_file, (r["mtime"], r["mtime"]))
                 os.chmod(target_file, r["perm"])
-                os.chown(target_file, r["uid"], r["gid"])
+                try:
+                    os.chown(target_file, r["uid"], r["gid"])
+                except OSError, oe:
+                    if oe.errno == 1:
+                        logger.error("chown(%d, %d): %s" % (r["uid"], r["gid"], str(oe)))
+                    else:
+                        raise oe
 
             # finally we remove the target_chunk file if it stills exists (and
             # we warn about this bug)

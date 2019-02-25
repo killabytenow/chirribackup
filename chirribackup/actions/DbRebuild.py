@@ -72,6 +72,7 @@ class DbRebuild(chirribackup.actions.DbCreator.DbCreator):
 
 
     def status_0_remote_file_listing(self):
+        logger.debug("status_0_remote_file_listing")
         snapshot_file_re = re.compile("^snapshots/snapshot-([1-9][0-9]*)\\.txt(\\.([a-zA-Z0-9_]+))?$")
         chunk_file_re = re.compile("^chunks/([^/]+)$")
         for f in self.sm.get_listing():
@@ -111,15 +112,20 @@ class DbRebuild(chirribackup.actions.DbCreator.DbCreator):
 
 
     def status_1_download_snapshots(self):
+        logger.debug("status_1_download_snapshots")
         for snp in self.ldb.snapshot_list():
             if snp.status == -1:
+                logger.debug("  [%s] Downloading snapshot" % snp.get_filename())
                 data = self.sm.download_data("snapshots/%s" % snp.get_filename())
+
                 if snp.compression is not None:
                     c = chirribackup.compression.Decompressor(self.ldb.compression)
                     data = c.decompress(data)
                     data += c.close()
                 snp.desc_load(data)
                 snp.set_status(5, False)
+            else:
+                logger.debug("  [%s] (status %d)" % (snp.get_filename(), snp.status))
 
         # commit -- now it is a good commit point
         self.ldb.status = 2
@@ -127,6 +133,7 @@ class DbRebuild(chirribackup.actions.DbCreator.DbCreator):
 
 
     def status_2_select_target_snapshot(self):
+        logger.debug("status_2_select_target_snapshot")
         print "Select target snapshot"
         print "======================"
         print ""
@@ -171,6 +178,7 @@ class DbRebuild(chirribackup.actions.DbCreator.DbCreator):
 
 
     def status_3_restore_files(self):
+        logger.debug("status_3_restore_files")
         # restore snapshot
         if self.ldb.rebuild_snapshot is not None:
             snp = chirribackup.snapshot.Snapshot(self.ldb)
@@ -245,6 +253,7 @@ class DbRebuild(chirribackup.actions.DbCreator.DbCreator):
         self.sm = self.ldb.get_storage_manager()
 
         # do things depending on current database status
+        logger.debug("starting rebuilding process")
         while True:
             if self.ldb.status == 0:
                 self.status_0_remote_file_listing()

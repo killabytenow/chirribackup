@@ -70,6 +70,10 @@ class BadParameterException(ActionInvocationException):
     """Bad parameter"""
 
 
+class NotImplementedException(ChirriException):
+    """Exceptions raised by an uncompleted piece of code"""
+
+
 class BadValueException(ChirriException):
     """Bad value"""
 

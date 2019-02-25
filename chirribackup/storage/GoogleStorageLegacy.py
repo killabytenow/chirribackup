@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 ###############################################################################
-# chirribackup/storage/GoogleStorage.py
+# chirribackup/storage/GoogleStorageLegacy.py
 #
+#   **DEPRECATED BY GOOGLE**
 #   Google storage (Standard, Durable Reduced Availability, Nearline) backup
 #   storage: backups are stored in the Google Cloud Platform, using the Google
 #   storage API.
@@ -36,8 +37,10 @@ import re
 import socket
 from httplib import HTTPException
 
-from google.oauth2 import service_account
-import google.cloud.storage
+from googleapiclient import discovery
+from googleapiclient import errors
+from googleapiclient import http
+from oauth2client.service_account import ServiceAccountCredentials
 
 from chirribackup.Logger import logger
 from chirribackup.StringFormat import format_num_bytes
@@ -53,42 +56,33 @@ class GoogleStorage(chirribackup.storage.BaseStorage.BaseStorage):
     # class attributes
     name = "Google Cloud storage"
     storage_status_keys = {
-        "sm_gs_json_creds_file": { "save": 1, "type": "str",  "value": None  },
-        "sm_gs_bucket":          { "save": 1, "type": "str",  "value": None  },
-        "sm_gs_folder":          { "save": 1, "type": "str",  "value": None  },
-        "sm_gs_chunked":         { "save": 1, "type": "bool", "value": False },
+        "sm_gs_json_creds_file": { "save": 1, "type": "str", "value": None },
+        "sm_gs_bucket":          { "save": 1, "type": "str", "value": None },
+        "sm_gs_folder":          { "save": 1, "type": "str", "value": None },
     }
 
     # object attributes
     scopes = None
     credentials = None
-    client = None
-    bucket = None
+    service = None
 
     def __init__(self, ldb, config = False):
         super(GoogleStorage, self).__init__(ldb, config)
-
         if not config:
             # okay .. not in config (ask_config() method)
             # load credentials and authenticate
             self.scopes = ['https://www.googleapis.com/auth/devstorage.read_write']
-                         #['https://www.googleapis.com/auth/cloud-platform'])
-            self.credentials = service_account.Credentials.from_service_account_file(
-                                   self.ldb.sm_gs_json_creds_file)
-            self.credentials = self.credentials.with_scopes(self.scopes)
-            self.client = google.cloud.storage.Client(credentials=self.credentials)
-            self.bucket = self.client.get_bucket(self.ldb.sm_gs_bucket)
+            self.credentials = ServiceAccountCredentials.from_json_keyfile_name(
+                                    self.ldb.sm_gs_json_creds_file,
+                                    scopes=self.scopes)
+            self.service = discovery.build('storage', 'v1', credentials=self.credentials)
 
 
     def __build_gs_path(self, remote_file):
-        if remote_file is None:
-            return self.ldb.sm_gs_folder
         if isinstance(remote_file, list):
             remote_file = os.path.join(*remote_file)
         if len(remote_file) > 0 and remote_file[0] == "/":
             raise ChirriException("bad path '%s'." % remote_file)
-        if len(self.ldb.sm_gs_folder) == 0:
-            return remote_file
         return os.path.join(self.ldb.sm_gs_folder, remote_file)
 
 
@@ -98,55 +92,43 @@ class GoogleStorage(chirribackup.storage.BaseStorage.BaseStorage):
                     os.path.realpath(
                         chirribackup.input.ask("JSON API credentials file", config["sm_gs_json_creds_file"]))
                 if not os.path.exists(config["sm_gs_json_creds_file"]):
-                    logger.error("File '%s' does not exists. Try again." \
-                                    % config["sm_gs_json_creds_file"])
+                    print "ERROR: File '%s' does not exists. Try again."
                     continue
                 try:
                     with open(config["sm_gs_json_creds_file"]) as data_file:    
                         creds = json.load(data_file)
                 except ValueError, ex:
-                    logger.error("Cannot parse JSON file '%s'. Try again." \
-                                    % config["sm_gs_json_creds_file"])
+                    print "ERROR: Cannot parse JSON file '%s'. Try again."
                     continue
                 break
 
             config["sm_gs_bucket"] = chirribackup.input.ask("Bucket name", config["sm_gs_bucket"])
             config["sm_gs_folder"] = chirribackup.input.ask("Root folder path", config["sm_gs_folder"])
-            config["sm_gs_chunked"] = chirribackup.input.ask("Chunked uploads and downloads", config["sm_gs_chunked"])
 
 
-    def __upload_iobase(self, remote_file, md5sum, f, size, retry = 0):
+    def __upload_iobase(self, remote_file, md5sum, f, retry = 0):
         try:
-            if not self.ldb.sm_gs_chunked:
-                blob = self.bucket.blob(self.__build_gs_path(remote_file))
-                blob.md5_hash = md5sum
-                blob.upload_from_file(f, num_retries=retry)
+            media = http.MediaIoBaseUpload(
+                            f,
+                            mimetype="application/octet-stream",
+                            resumable=True)
+            request = self.service.objects().insert(
+                        bucket = self.ldb.sm_gs_bucket,
+                        body = {
+                            "name"    : self.__build_gs_path(remote_file),
+                            "md5Hash" : md5sum,
+                        },
+                        media_body = media)
 
-            else:
-                #media = http.MediaIoBaseUpload(
-                #                f,
-                #                mimetype="application/octet-stream",
-                #                resumable=True)
-                #request = self.service.objects().insert(
-                #            bucket = self.ldb.sm_gs_bucket,
-                #            body = {
-                #                "name"    : self.__build_gs_path(remote_file),
-                #                "md5Hash" : md5sum,
-                #            },
-                #            media_body = media)
-
-                #response = None
-                #last_progress = 0
-                #while response is None:
-                #    status, response = request.next_chunk()
-                #    if status:
-                #        current_progress = int(status.progress() * 100)
-                #        if last_progress != current_progress:
-                #            last_progress = int(status.progress() * 100)
-                #            logger.info("    Uploaded %d%%." % current_progress)
-                #logger.info("    Upload Complete!")
-                raise NotImplementedException("__upload_iobase")
-
+            response = None
+            last_progress = 0
+            while response is None:
+                status, response = request.next_chunk()
+                if status:
+                    current_progress = int(status.progress() * 100)
+                    if last_progress != current_progress:
+                        last_progress = int(status.progress() * 100)
+                        logger.info("    Uploaded %d%%." % current_progress)
             logger.info("    Upload Complete!")
 
         except socket.error, ex:
@@ -157,17 +139,17 @@ class GoogleStorage(chirribackup.storage.BaseStorage.BaseStorage):
             else:
                 raise StoragePermanentCommunicationException(str(ex))
 
-        #except HTTPException, ex:
-        #    logger.error("httplib.HTTPException = %s: %s" \
-        #        % (ex.__class__.__name__, ex))
-        #    raise StorageTemporaryCommunicationException(str(ex))
+        except HTTPException, ex:
+            logger.error("httplib.HTTPException = %s: %s" \
+                % (ex.__class__.__name__, ex))
+            raise StorageTemporaryCommunicationException(str(ex))
 
-        #except errors.HttpError, ex:
-        #    logger.error("googleapiclient.errors.HttpError = %s" % str(ex))
-        #    if re.compile("^<HttpError 5[0-9][0-9] .*$").match(str(ex)) is not None:
-        #        raise StorageTemporaryCommunicationException(str(ex))
-        #    else:
-        #        raise StoragePermanentCommunicationException(str(ex))
+        except errors.HttpError, ex:
+            logger.error("googleapiclient.errors.HttpError = %s" % str(ex))
+            if re.compile("^<HttpError 5[0-9][0-9] .*$").match(str(ex)) is not None:
+                raise StorageTemporaryCommunicationException(str(ex))
+            else:
+                raise StoragePermanentCommunicationException(str(ex))
 
 
     def upload_file(self, remote_file, local_file):
@@ -184,7 +166,7 @@ class GoogleStorage(chirribackup.storage.BaseStorage.BaseStorage):
         # upload file
         if size > 0:
             with open(local_file, "rb") as f:
-                self.__upload_iobase(remote_file, md5sum, f, size)
+                self.__upload_iobase(remote_file, md5sum, f)
         else:
             logger.info("File of 0 bytes cannot be uploaded to GCS")
 
@@ -196,42 +178,38 @@ class GoogleStorage(chirribackup.storage.BaseStorage.BaseStorage):
 
         # upload file
         if len(data) > 0:
-            self.__upload_iobase(remote_file, md5sum, StringIO.StringIO(data), len(data))
+            self.__upload_iobase(remote_file, md5sum, StringIO.StringIO(data))
         else:
             logger.info("File of 0 bytes cannot be uploaded to GCS")
 
 
     def get_listing(self, path = ""):
-        logger.debug("Listing bucket '%s' with prefix '%s'." \
-                        % (self.ldb.sm_gs_bucket, self.__build_gs_path("")))
-        blobs = self.bucket.list_blobs(prefix=self.__build_gs_path(""))
+        req = self.service.objects().list(
+                    bucket = self.ldb.sm_gs_bucket,
+                    fields = "nextPageToken,items(name,size)")
         l = []
-        for blob in blobs:
-            if blob.name != self.__build_gs_path(""):
+        while req:
+            resp = req.execute()
+            for i in resp.get('items', []):
                 l.append(
                     {
-                        "name" : blob.name[len(self.__build_gs_path("")):],
-                        "size" : blob.size,
+                        "name" : i["name"][len(self.ldb.sm_gs_folder)+1:],
+                        "size" : i["size"],
                     })
-            else:
-                logger.error("[[[[[[[[[[[[[[[[[[[[%s] [%d]" \
-                                % (blob.path, blob.size))
+            req = self.service.objects().list_next(req, resp)
         return l
 
 
     def __download(self, remote_file, f):
-        """Downloads a blob from the bucket."""
-        blob = self.bucket.blob(self.__build_gs_path(remote_file))
+        req = self.service.objects().get_media(
+                            bucket = self.ldb.sm_gs_bucket,
+                            object = self.__build_gs_path(remote_file))
+        downloader = http.MediaIoBaseDownload(f, req)
 
-        if not self.ldb.sm_gs_chunked:
-            blob.download_to_file(f)
-
-        else:
-            #done = False
-            #while done is False:
-            #    status, done = downloader.next_chunk()
-            #    logger.info("%s: Download %.2f." % (remote_file, int(status.progress() * 100)))
-            raise NotImplementedException("__upload_iobase")
+        done = False
+        while done is False:
+            status, done = downloader.next_chunk()
+            logger.info("%s: Download %.2f." % (remote_file, int(status.progress() * 100)))
 
 
     def download_file(self, remote_file, local_path):
@@ -246,7 +224,16 @@ class GoogleStorage(chirribackup.storage.BaseStorage.BaseStorage):
 
 
     def delete_file(self, remote_file):
-        blob = self.bucket.blob(self.__build_gs_path(remote_file))
-        blob.delete()
+        try:
+            req = self.service.objects().delete(
+                            bucket = self.ldb.sm_gs_bucket,
+                            object = self.__build_gs_path(remote_file))
+            resp = req.execute()
+        except errors.HttpError, ex:
+            if ex.resp.status != 404:
+                raise ex
+            else:
+                logger.error("Cannot delete remote file '%s' because it does not exists." \
+                                % remote_file)
 
 
