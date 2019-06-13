@@ -47,7 +47,9 @@ class Sync(chirribackup.actions.BaseAction.BaseAction):
 
 
     def go(self):
+        logger.debug("Opening local database")
         self.ldb = chirribackup.LocalDatabase.LocalDatabase(CONFIG.path)
+        logger.debug("Creating syncer")
         syncer = chirribackup.syncer.Syncer(self.ldb)
         syncer.run()
         print "Finished succesfully:"

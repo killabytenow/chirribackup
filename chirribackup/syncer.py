@@ -46,6 +46,7 @@ class Syncer(object):
 
     def __init__(self, ldb):
         self.ldb = ldb
+        logger.debug("Initializing syncer")
         self.sm = self.ldb.get_storage_manager()
         self.counters = {
             "bytes"           : 0,
@@ -53,6 +54,7 @@ class Syncer(object):
             "snapshots"       : 0,
             "chunks"          : 0,
         }
+        logger.debug("syncer Initialized")
 
     def sync_snapshots(self):
         logger.info("Syncing snapshots")

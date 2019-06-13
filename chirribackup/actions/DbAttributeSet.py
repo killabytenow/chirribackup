@@ -96,6 +96,8 @@ class DbAttributeSet(chirribackup.actions.BaseAction.BaseAction):
                 r["type"] = "int"
             elif p == "str":
                 r["type"] = "str"
+            elif p == "bool":
+                r["type"] = "bool"
             else:
                 raise UnknownParameterException("Unknown config key type '%s'." % p)
             p = argv.pop(0)

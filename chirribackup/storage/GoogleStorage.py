@@ -73,11 +73,15 @@ class GoogleStorage(chirribackup.storage.BaseStorage.BaseStorage):
             # load credentials and authenticate
             self.scopes = ['https://www.googleapis.com/auth/devstorage.read_write']
                          #['https://www.googleapis.com/auth/cloud-platform'])
+            logger.debug("Using credentials '%s'" % self.ldb.sm_gs_json_creds_file)
             self.credentials = service_account.Credentials.from_service_account_file(
                                    self.ldb.sm_gs_json_creds_file)
             self.credentials = self.credentials.with_scopes(self.scopes)
-            self.client = google.cloud.storage.Client(credentials=self.credentials)
+            logger.debug("Creating gs client")
+            self.client = google.cloud.storage.Client(credentials=self.credentials, project=self.credentials._project_id)
+            logger.debug("Setting bucket %s" % self.ldb.sm_gs_bucket)
             self.bucket = self.client.get_bucket(self.ldb.sm_gs_bucket)
+            logger.debug("GS storage manager ready")
 
 
     def __build_gs_path(self, remote_file):
@@ -201,22 +205,33 @@ class GoogleStorage(chirribackup.storage.BaseStorage.BaseStorage):
             logger.info("File of 0 bytes cannot be uploaded to GCS")
 
 
-    def get_listing(self, path = ""):
+    def __get_listing(self, path = ""):
+        if path != "":
+            path = path + "/"
         logger.debug("Listing bucket '%s' with prefix '%s'." \
-                        % (self.ldb.sm_gs_bucket, self.__build_gs_path("")))
-        blobs = self.bucket.list_blobs(prefix=self.__build_gs_path(""))
+                        % (self.ldb.sm_gs_bucket, self.__build_gs_path(path)))
+        blobs = self.bucket.list_blobs(prefix=self.__build_gs_path(path))
         l = []
         for blob in blobs:
-            if blob.name != self.__build_gs_path(""):
+            if blob.name != self.__build_gs_path(path):
                 l.append(
                     {
-                        "name" : blob.name[len(self.__build_gs_path("")):],
+                        "name" : blob.name[len(self.__build_gs_path(path)):],
                         "size" : blob.size,
                     })
-            else:
-                logger.error("[[[[[[[[[[[[[[[[[[[[%s] [%d]" \
-                                % (blob.path, blob.size))
         return l
+
+
+    def get_listing(self):
+        return self.__get_listing()
+
+
+    def get_listing_chunks(self):
+        return self.__get_listing("chunks")
+
+
+    def get_listing_snapshots(self):
+        return self.__get_listing("snapshots")
 
 
     def __download(self, remote_file, f):

@@ -103,7 +103,7 @@ class Local(chirribackup.storage.BaseStorage.BaseStorage):
             ofile.write(data)
 
 
-    def get_listing(self, path = ""):
+    def __get_listing(self, path = ""):
         l = []
         try:
             for f in os.listdir(self.__build_ls_path(path)):
@@ -119,6 +119,18 @@ class Local(chirribackup.storage.BaseStorage.BaseStorage):
             logger.warning("No snapshots found.")
 
         return l
+
+
+    def get_listing(self):
+        return self.__get_listing()
+
+
+    def get_listing_snapshots(self):
+        return self.__get_listing("snapshots")
+
+
+    def get_listing_chunks(self):
+        return self.__get_listing("chunks")
 
 
     def download_file(self, remote_file, local_path):

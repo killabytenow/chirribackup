@@ -41,7 +41,9 @@ from chirribackup.exceptions import ChirriException, ChunkBadFilenameException, 
 
 class DbCheck(chirribackup.actions.BaseAction.BaseAction):
 
+    remote = 0
     fix = 0
+    sm = None
 
     help = {
         "synopsis": "Check database integrity and fix problems",
@@ -50,6 +52,9 @@ class DbCheck(chirribackup.actions.BaseAction.BaseAction):
             "Backup local database."
         ],
         "args": [
+            [ "?remote",
+                "Connect to remote storage and check files."
+            ],
             [ "?fix",
                 "If present string option 'fix', all errors will be fixed."
             ],
@@ -100,6 +105,38 @@ class DbCheck(chirribackup.actions.BaseAction.BaseAction):
         # 3.2. hash exists and size matches
         # 4. size >= 0
         # 5. status NULL OR (status >= -1 AND status <= 2)
+
+
+    def check_remote_chunks(self):
+        if not self.remote:
+            logger.info("Not checking remote chunks -- option 'remote' not enabled.")
+            return
+        logger.info("Checking remote chunks...")
+        logger.info("  - loading list of local chunks")
+        cl = {}
+        for c in self.ldb.connection.execute("SELECT * FROM file_data"):
+            cl[c["hash"]] = c
+
+        logger.info("  - parsing list of remote chunks")
+        for fname in self.sm.get_listing_chunks():
+            cbi = chirribackup.chunk.Chunk.parse_filename(fname)
+            if cbi["hash"] not in cl:
+                logger.error("Chunk %s does not exist in local database." % (cbi["hash"]))
+            else:
+                if cbi["size"] != cl[cbi["hash"]]["size"]:
+                    logger.error("Chunk %s remote size %d does not match with local size %d" \
+                                    % (cbi["hash"], cbi["size"], cl[cbi["hash"]]["size"]))
+                del cl[cbi["hash"]]
+
+        for c in cl:
+            logger.error("Chunk %s is not uploaded." % c["hash"])
+
+
+    def check_remote_snapshots(self):
+        if not self.remote:
+            logger.info("Not checking remote snapshots -- option 'remote' not enabled.")
+            return
+        logger.info("Checking remote snapshots...")
 
 
     def check_chunks(self):
@@ -363,6 +400,7 @@ class DbCheck(chirribackup.actions.BaseAction.BaseAction):
 
     def parse_args(self, argv):
         fix_level = 0
+        remote_check = 0
         while len(argv) > 0:
             if argv[0] == "fix":
                 fix_level |= 1
@@ -370,26 +408,36 @@ class DbCheck(chirribackup.actions.BaseAction.BaseAction):
             elif argv[0] == "ask":
                 fix_level |= 2
                 argv.pop(0)
+            elif argv[0] == "remote":
+                remote_check |= 2
+                argv.pop(0)
             else:
                 raise BadParameterException("Unknown flag '%s'." % argv[0])
         return {
             "fix_level" : fix_level,
+            "remote_check" : remote_check,
         }
 
 
     def check_config_backups(self):
         """TODO"""
 
-    def go(self, fix_level):
+    def go(self, fix_level, remote_check):
         self.fix = fix_level
+        self.remote = remote_check
 
         self.ldb = chirribackup.LocalDatabase.LocalDatabase(CONFIG.path, db_version_check = False)
+
+        if self.remote:
+            self.sm = self.ldb.get_storage_manager()
 
         self.check_db()
         self.check_snapshots()
         self.check_refs()
         self.check_chunks()
         self.check_local_chunks()
+        self.check_remote_chunks()
+        self.check_remote_snapshots()
         self.check_exclude()
         self.check_config_backups()
 
