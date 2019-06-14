@@ -88,7 +88,7 @@ class DbCheck(chirribackup.actions.BaseAction.BaseAction):
 
 
     def check_snapshots(self):
-        logger.info("Checking snapshots...")
+        logger.info("check_snapshots: NOT IMPLEMENTED")
         # 1. check last id > biggest snapshot id
         # 2. check snapshots attributes
         # 2.1 check status >= 0 <= 5 or (status == -1 and rebuild)
@@ -99,7 +99,7 @@ class DbCheck(chirribackup.actions.BaseAction.BaseAction):
 
 
     def check_refs(self):
-        logger.info("Checking file references...")
+        logger.info("check_refs: NOT IMPLEMENTED")
         # 1. all snapshots exist
         # 2. path NOT NULL
         # 3.1. hash NOT NULL OR /^[a-f0-9]+$/
@@ -110,76 +110,96 @@ class DbCheck(chirribackup.actions.BaseAction.BaseAction):
 
     def check_remote_chunks(self):
         if not self.remote:
-            logger.info("Not checking remote chunks -- option 'remote' not enabled.")
+            logger.info("check_remote_chunks: check disabled -- option 'remote' not enabled")
             return
-        logger.info("Checking remote chunks...")
-        logger.info("  - loading list of local chunks")
+
+        logger.info("check_remote_chunks: started")
+        logger.info("check_remote_chunks: loading list of local chunks")
         cl = {}
         for c in self.ldb.connection.execute("SELECT * FROM file_data"):
             cl[c["hash"]] = c
 
-        logger.info("  - getting list of remote chunks")
+        logger.info("check_remote_chunks: getting list of remote chunks")
         rcl = self.sm.get_listing_chunks()
-        logger.info("  - parsing list of remote chunks (%d chunks)" % len(rcl))
+
+        logger.info("check_remote_chunks: parsing list of remote chunks (%d chunks)" % len(rcl))
         for f in rcl:
             cbi = chirribackup.chunk.Chunk.parse_filename(f["name"])
             if cbi["hash"] not in cl:
-                logger.error("Chunk %s does not exist in local database." % (cbi["hash"]))
+                logger.error("check_remote_chunks: Chunk %s does not exist in local database" % (cbi["hash"]))
             else:
                 if f["size"] != cl[cbi["hash"]]["csize"]:
-                    logger.error("Chunk %s remote real size %d does not match with local size %d" \
+                    logger.error("check_remote_chunks: Chunk %s remote real size %d does not match with local size %d" \
                                     % (cbi["hash"], f["size"], cl[cbi["hash"]]["size"]))
                 if cbi["size"] != cl[cbi["hash"]]["size"]:
-                    logger.error("Chunk %s remote declared size %d does not match with local size %d" \
+                    logger.error("check_remote_chunks: Chunk %s remote declared size %d does not match with local size %d" \
                                     % (cbi["hash"], cbi["size"], cl[cbi["hash"]]["size"]))
                 del cl[cbi["hash"]]
 
-        logger.info("  - Detecting not uploaded chunks")
+        logger.info("check_remote_chunks: Detecting not uploaded chunks")
         for c in cl:
-            logger.error("Chunk %s is not uploaded." % c)
+            logger.error("check_remote_chunks: Chunk %s is not uploaded" % c)
+            # TODO: checks depending on chunk status
+            #  / pending upload
+            #  / uploaded
+            #  / fix not-uploaded but in theory uploaded chunk
 
-        logger.info("Checking remote chunks finished.")
+        logger.info("check_remote_chunks: finished")
 
 
     def check_remote_snapshots(self):
         if not self.remote:
-            logger.info("Not checking remote snapshots -- option 'remote' not enabled.")
+            logger.info("check_remote_snapshots: check disabled -- option 'remote' not enabled")
             return
-        logger.info("Checking remote snapshots...")
-        logger.error("Not implemented")
+
+        logger.info("check_remote_snapshots: NOT IMPLEMENTED")
 
 
     def check_chunks(self):
-        logger.info("Checking chunks...")
-        for chunk in chirribackup.chunk.Chunk.list(self.ldb):
+        logger.info("check_chunks: started")
+        chunk_list = chirribackup.chunk.Chunk.list(self.ldb)
+        logger.info("check_chunks: load chunk ref counters")
+        chunk_ref_count = {}
+        for r in self.ldb.connection.execute(
+                    """
+                        SELECT hash, COUNT(*) AS refcount
+                        FROM file_ref
+                        GROUP BY hash
+                    """):
+            chunk_ref_count[r["hash"]] = r["refcount"]
+        logger.info("check_chunks: going to check db integrity of %d chunks" % len(chunk_list))
+        i = 0
+        p = 0
+        for chunk in chunk_list:
+            if int(i * 10 / len(chunk_list)) != p:
+                p = int(i * 10 / len(chunk_list))
+                logger.info("check_chunks: %d%% complete (%d chunks processed)" % (p * 10, i))
+
             bad_chunk = False
 
             # 1. check hash id
             if not chirribackup.crypto.ChirriHasher.hash_check(chunk.hash):
-                logger.error("Malformed hash '%s' in chunk" % chunk.hash)
+                logger.error("check_chunks: Malformed hash '%s' in chunk" % chunk.hash)
                 bad_chunk = True
 
             # 2. size >= 0
             if chunk.size < 0:
-                logger.error("Chunk '%s' with negative size" % chunk.hash_format())
+                logger.error("check_chunks: Chunk '%s' with negative size" % chunk.hash_format())
                 bad_chunk = True
 
             # 3. first_seen_as NOT NULL AND NOT VOID
             if chunk.first_seen_as is None or chunk.first_seen_as == "":
-                logger.error("Chunk '%s' never seen with a name" % chunk.hash_format())
+                logger.error("check_chunks: Chunk '%s' never seen with a name" % chunk.hash_format())
                 bad_chunk = True
 
             # 4. refcount = (SELECT COUNT(*) FROM file_ref WHERE hash = hash)
-            refcount = self.ldb.connection.execute(
-                            """
-                                SELECT COUNT(*) AS refcount
-                                FROM file_ref
-                                WHERE hash = :hash
-                            """, {
-                                "hash" : chunk.hash,
-                            }).fetchone()["refcount"]
+            refcount = chunk_ref_count[chunk.hash] if chunk.hash in chunk_ref_count else 0
+
+            if refcount == 0:
+                logger.error("check_chunks: Chunk '%s' is never referenced", chunk.hash_format())
+
             if refcount != chunk.refcount:
-                logger.error("Chunk '%s' referenced %d times, but expected %d" \
+                logger.error("check_chunks: Chunk '%s' referenced %d times, but expected %d" \
                                 % (chunk.hash_format(), chunk.refcount, refcount))
                 if refcount == 0:
                     # no body loves it, so is better to delete it
@@ -200,18 +220,18 @@ class DbCheck(chirribackup.actions.BaseAction.BaseAction):
 
             # 5. 0 <= status <= 1
             if chunk.status < 0 or chunk.status > 2:
-                raise ChirriException("Not implemented.")
+                raise ChirriException("Not implemented")
                 # i dont know what to do here
 
             # 6. compression algorithm
             if chunk.compression is not None and chunk.compression not in [ "lzma" ]:
-                logger.error("Chunk %s is using unknown compression algorithm '%s'." \
+                logger.error("check_chunks: Chunk %s is using unknown compression algorithm '%s'" \
                                 % (chunk.hash_format(), chunk.compression))
-                raise ChirriException("Not implemented.")
+                raise ChirriException("Not implemented")
                 
             # if 'bad_chunk' flag is set, then propose to delete this chunk
             if bad_chunk and self.do_fix("Remove chunk"):
-                raise ChirriException("Not implemented.")
+                raise ChirriException("Not implemented")
                 # TODO:
                 #   1) set all file_ref pointing to this to status -1
                 #   2) unset this ref in all file_ref pointing to this
@@ -220,12 +240,26 @@ class DbCheck(chirribackup.actions.BaseAction.BaseAction):
                 #      else
                 #        3.2) delete this entry
 
+            i = i + 1
+
+        logger.info("check_chunks: finished")
+
 
     def check_local_chunks(self):
-        logger.info("Checking local chunks...")
+        logger.info("check_local_chunks: started")
+
+        # get list of local chunks
+        local_chunks_list = os.listdir(os.path.realpath(self.ldb.chunks_dir))
+        logger.info("check_local_chunks: going to check integrity of %d local chunks" % len(local_chunks_list))
 
         # 1. chunks in disk are referenced by local database?
-        for fname in os.listdir(os.path.realpath(self.ldb.chunks_dir)):
+        i = 0
+        p = 0
+        for fname in local_chunks_list:
+            if int(i * 10 / len(local_chunks_list)) != p:
+                p = int(i * 10 / len(local_chunks_list))
+                logger.info("check_local_chunks: %d%% complete (%d chunks processed)" % (p * 10, i))
+
             try:
                 # set 'fpath' initially with the only date we have
                 fpath = os.path.realpath(os.path.join(self.ldb.chunks_dir, fname))
@@ -239,11 +273,11 @@ class DbCheck(chirribackup.actions.BaseAction.BaseAction):
                 # 1.3 basic information (cbi) matches with chunk info
                 if chunk.size != cbi["size"] \
                 or chunk.compression != cbi["compression"]:
-                    raise ChirriException("cbi does not match -- Not implemented.")
+                    raise ChirriException("cbi does not match -- Not implemented")
 
                 # 1.4 chunk in disk but already uploaded
                 if chunk.status == 2:
-                    logger.error("Chunk %s already uploaded." % chunk.hash_format())
+                    logger.error("check_local_chunks: Chunk %s already uploaded" % chunk.hash_format())
                     if self.do_fix("Delete chunk already uploaded"):
                         os.unlink(fpath)
 
@@ -258,7 +292,7 @@ class DbCheck(chirribackup.actions.BaseAction.BaseAction):
 
                     # 1.5 chunk not uploaded, but corrupted
                     if h.nbytes != chunk.size or h.hash != chunk.hash:
-                        logger.error("Chunk %s corrupted but never uploaded" % chunk.hash_format())
+                        logger.error("check_local_chunks: Chunk %s corrupted but never uploaded" % chunk.hash_format())
                         if self.do_fix("Delete chunk and set references as erroneous"):
                             os.unlink(fpath)
                             self.ldb.connection.execute(
@@ -273,26 +307,29 @@ class DbCheck(chirribackup.actions.BaseAction.BaseAction):
                             self.ldb.connection.commit()
 
                 except IOError, ex:
-                    logger.error("Cannot read chunk %s: %s" % (fpath, ex))
+                    logger.error("check_local_chunks: Cannot read chunk %s: %s" % (fpath, ex))
                     if self.do_fix("Wat do?"):
-                        raise ChirriException("Not implemented.")
+                        raise ChirriException("Not implemented")
 
             except ChunkBadFilenameException, ex:
-                logger.error("Bad chunk file name '%s': %s" % (fpath, ex))
+                logger.error("check_local_chunks: Bad chunk file name '%s': %s" % (fpath, ex))
                 if self.do_fix("Delete file with bad chunk name"):
                     os.unlink(fpath)
 
             except ChunkNotFoundException, ex:
-                logger.error("File hash %s does not exists in db" % fpath)
+                logger.error("check_local_chunks: File hash %s does not exists in db" % fpath)
                 if self.do_fix("Delete chunk not found in db"):
                     os.unlink(fpath)
 
+            i = i + 1
+
         # 2. check that pending chunks are in disk
+        logger.info("check_local_chunks: check pending chunks are in disk")
         for chunk in chirribackup.chunk.Chunk.list(self.ldb, status = 0) \
                    + chirribackup.chunk.Chunk.list(self.ldb, status = 1):
             fpath = os.path.realpath(os.path.join(self.ldb.chunks_dir, chunk.get_filename()))
             if not os.path.exists(fpath):
-                logger.error("Not uploaded chunk %s referenced, but not found in __chunks__" \
+                logger.error("check_local_chunks: Not uploaded chunk %s referenced, but not found in __chunks__" \
                                 % chunk.hash_format())
                 if self.do_fix("Set references as erroneous"):
                     self.ldb.connection.execute(
@@ -306,8 +343,11 @@ class DbCheck(chirribackup.actions.BaseAction.BaseAction):
                                 { "hash" : fd["hash"] })
                     self.ldb.connection.commit()
 
+        logger.info("check_local_chunks: finished")
+
 
     def check_db(self):
+        logger.info("check_db: started")
         column_snapshots_compression_exists = False
         column_snapshots_uploaded_tstamp_exists = False
         column_snapshots_signed_tstamp_exists = False
@@ -321,13 +361,13 @@ class DbCheck(chirribackup.actions.BaseAction.BaseAction):
 
         # add snapshots.compression column
         if not column_snapshots_compression_exists:
-            logger.warning("Adding missing column snapshots.compression")
+            logger.warning("check_db: Adding missing column snapshots.compression")
             self.ldb.connection.execute("ALTER TABLE snapshots ADD COLUMN compression VARCHAR(8)")
             self.ldb.connection.commit()
 
         # add snapshots.signed column
         if not column_snapshots_signed_tstamp_exists:
-            logger.warning("Adding missing column snapshots.signed_tstamp")
+            logger.warning("check_db: Adding missing column snapshots.signed_tstamp")
             self.ldb.connection.execute("ALTER TABLE snapshots ADD COLUMN signed_tstamp INTEGER")
             if column_snapshots_uploaded_tstamp_exists:
                 self.ldb.connection.execute(
@@ -342,19 +382,19 @@ class DbCheck(chirribackup.actions.BaseAction.BaseAction):
             # XXX: sqlite3 does not support ALTER TABLE DROP COLUMN, so we do
             # not do nothing here. It is only an unused column in a local
             # database; we can cope with some little anoying bytes.
-            #logger.warning("Delete unused column snapshots.uploaded_tstamp")
+            #logger.warning("check_db: Delete unused column snapshots.uploaded_tstamp")
             #self.ldb.connection.execute("ALTER TABLE snapshots DROP COLUMN uploaded_tstamp")
             #self.ldb.connection.commit()
-            logger.warning("Detected an old database with snapshots.uploaded_tstamp column. Ignoring it.")
+            logger.warning("check_db: Detected an old database with snapshots.uploaded_tstamp column. Ignoring it.")
 
         # check for unknown config values
         # check status value
         rebuild = self.ldb.status < 100
         if self.ldb.status < 0 \
         or self.ldb.status > 100:
-            logger.error("Unknown database status %d." % int(self.ldb.status))
+            logger.error("check_db: Unknown database status %d" % int(self.ldb.status))
             if self.do_fix("Fix database status"):
-                raise ChirriException("Not implemented.")
+                raise ChirriException("Not implemented")
 
         # upgrading from db_version 1 to db_version 2
         if self.ldb.db_version == 1:
@@ -374,14 +414,18 @@ class DbCheck(chirribackup.actions.BaseAction.BaseAction):
             self.ldb.db_version = 2
             self.ldb.connection.commit()
 
+        logger.info("check_db: finished")
+
 
     def check_exclude(self):
+        logger.info("check_exclude: started")
+
         for x in self.ldb.connection.execute("SELECT * FROM excludes"):
             if x["disabled"] != 0:
                 continue
 
             if x["exclude"] == "":
-                logger.error("Void exclude expression.")
+                logger.error("check_exclude: Void exclude expression.")
                 if self.do_fix("Delete exclude rule"):
                     self.ldb.connection.execute(
                         """
@@ -395,7 +439,7 @@ class DbCheck(chirribackup.actions.BaseAction.BaseAction):
                 try:
                     re.compile(x["exclude"])
                 except re.error, ex:
-                    logger.error("Cannot compile regex /%s/: %s" % (x["exclude"], re.error))
+                    logger.error("check_exclude: Cannot compile regex /%s/: %s" % (x["exclude"], re.error))
                     if self.do_fix("Disable exclude rule"):
                         self.ldb.connection.execute(
                             """
@@ -406,6 +450,8 @@ class DbCheck(chirribackup.actions.BaseAction.BaseAction):
                                 "exclude_id"   : x["exclude_id"],
                             })
                         self.ldb.connection.commit()
+
+        logger.info("check_exclude: finished")
 
 
     def parse_args(self, argv):
@@ -431,6 +477,7 @@ class DbCheck(chirribackup.actions.BaseAction.BaseAction):
 
     def check_config_backups(self):
         """TODO"""
+        logger.info("check_config_backups: NOT IMPLEMENTED")
 
     def go(self, fix_level, remote_check):
         self.fix = fix_level
@@ -442,12 +489,12 @@ class DbCheck(chirribackup.actions.BaseAction.BaseAction):
             self.sm = self.ldb.get_storage_manager()
 
         self.check_db()
-        #self.check_snapshots()
-        #self.check_refs()
-        #self.check_chunks()
-        #self.check_local_chunks()
+        self.check_snapshots()
+        self.check_refs()
+        self.check_chunks()
+        self.check_local_chunks()
         self.check_remote_chunks()
-        #self.check_remote_snapshots()
-        #self.check_exclude()
-        #self.check_config_backups()
+        self.check_remote_snapshots()
+        self.check_exclude()
+        self.check_config_backups()
 
