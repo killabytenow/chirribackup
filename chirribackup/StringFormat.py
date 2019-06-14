@@ -26,6 +26,7 @@
 
 import logging
 import logging.handlers
+import pprint
 import sys
 from struct import unpack
 
@@ -74,5 +75,12 @@ def format_num_bytes(value):
     else:                       r = "%d bytes" % value
 
     return r
+
+
+def dump(name, var):
+    return "Dump of %s(%s):" % (name, var.__class__.__name__) \
+         + ((" %s" % var.__str__()) if hasattr(var, "__str__") else "") \
+         + "\n" \
+         + pprint.pformat(vars(var) if hasattr(var, "__dict__") else var, indent = 4)
 
 

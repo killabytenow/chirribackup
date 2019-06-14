@@ -40,7 +40,7 @@ from google.oauth2 import service_account
 import google.cloud.storage
 
 from chirribackup.Logger import logger
-from chirribackup.StringFormat import format_num_bytes
+from chirribackup.StringFormat import format_num_bytes, dump
 from chirribackup.exceptions import ChirriException, \
                                     StorageTemporaryCommunicationException, \
                                     StoragePermanentCommunicationException
@@ -77,6 +77,8 @@ class GoogleStorage(chirribackup.storage.BaseStorage.BaseStorage):
             self.credentials = service_account.Credentials.from_service_account_file(
                                    self.ldb.sm_gs_json_creds_file)
             self.credentials = self.credentials.with_scopes(self.scopes)
+            logger.debug(dump("self.credentials", self.credentials))
+            logger.debug("project <%s>" % (self.credentials._project_id))
             logger.debug("Creating gs client")
             self.client = google.cloud.storage.Client(credentials=self.credentials, project=self.credentials._project_id)
             logger.debug("Setting bucket %s" % self.ldb.sm_gs_bucket)

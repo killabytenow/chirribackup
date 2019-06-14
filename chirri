@@ -26,10 +26,11 @@
 from chirribackup import ActionsManager
 from chirribackup.Config import CONFIG
 from chirribackup.Logger import logger
+from chirribackup.StringFormat import dump
 import sys
-import pprint
 
 from chirribackup.exceptions import ActionInvocationException, ChirriException
+from chirribackup.StringFormat import dump
 
 try:
     ActionsManager.invoke(CONFIG.args)
@@ -39,15 +40,12 @@ except ActionInvocationException, ex:
     sys.exit(1)
 
 except ChirriException, ex:
-    logger.critical(str(ex))
+    logger.critical(dump("ChirriException", ex))
     sys.exit(1)
 
 except Exception, ex:
-    logger.error("dir(Exception)           = (%s)" % ", ".join(dir(Exception)))
-    logger.error("dir(Exception.__class__) = (%s)" % ", ".join(dir(Exception.__class__)))
-    logger.error("ex.__class__             = [%s]" % ex.__class__)
-    logger.error("ex.__class__.__name__    = [%s]" % ex.__class__.__name__)
     logger.error(str(ex))
-    logger.error(pprint.PrettyPrinter(depth=6))
+    logger.error(dump("Unknown exception", ex))
     sys.exit(1)
+
 sys.exit(0)
